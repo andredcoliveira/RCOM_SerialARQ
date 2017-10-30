@@ -310,10 +310,10 @@ void progressBar(int done, int total) {
 	fraction = (float) done/total;
 	fprintf(stderr, "\r\33[2KProgress: %2.2f%% - |", fraction*100);
 	// fprintf(stderr, "\nProgress: %2.2f%% - |", fraction*100);
-	for(j = 0; j < fraction * 50; j++) {
+	for(j = 0; j < fraction * 28; j++) {
 		fprintf(stderr, "|");
 	}
-	for(j = 0; j < 50 - (fraction*50); j++) {
+	for(j = 0; j < 28 - (fraction*28); j++) {
 		fprintf(stderr, " ");
 	}
 	fprintf(stderr, "| - sent/total: %d/%d", done, total);

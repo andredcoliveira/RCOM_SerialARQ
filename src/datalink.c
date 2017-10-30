@@ -28,7 +28,7 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	if(MODE == TX) {
 		timer_seconds = 3;
 	} else {
-		timer_seconds = 4;
+		timer_seconds = 3;
 	}
 
 	fd_set readfds;
@@ -49,9 +49,10 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 		res = select(port + 1, &readfds, NULL, NULL, &tv);
 		if(res == -1) {
 			perror("select()"); //some error occured in select
+			return -2;
 		} else if(res == 0) {
-			fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n", timer_seconds);
-			memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
+			// memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
+			// tcflush(port, TCIOFLUSH);
 			return ERR_READ_TIMEOUT;
 		} else if(FD_ISSET(port, &readfds)) {
 			//port has data
@@ -105,7 +106,7 @@ int llopen(int port, int MODE) {
 						return -1;
 					}
 					fprintf(stderr, "\nSending SET...\n");
-					tcflush(port, TCIOFLUSH);  //clear port
+					// tcflush(port, TCIOFLUSH);  //clear port
 					res = write(port, SET, 5);
 					alarm(timer_seconds);
 					flag_alarm = 0;
@@ -281,7 +282,7 @@ int llopen(int port, int MODE) {
 				case 6: //SET received, send UA
 					alarm(0);
 					fprintf(stderr, "\nGOOD DOGGY DOG RX, sending UA...\n");
-					tcflush(port, TCIOFLUSH);  //clear port
+					// tcflush(port, TCIOFLUSH);  //clear port
 					res = write(port, UA, 5);
 					fprintf(stderr, "\nUA frame sent: |%x|%x|%x|%x|%x|;\t bytes sent: %d\n\n", UA[0], UA[1], UA[2], UA[3], UA[4], res);
 					done = 1;
@@ -301,16 +302,11 @@ int llread(int port, unsigned char *buffer) {
 
   int state = 0, bad = 0, i = 0, j = 0, done = 0, got = 0;
 	unsigned char RR[5], REJ[5], RR_LOST[5], DISC[5];
-	// int flag_SET = 0;
-	// unsigned char SET[5];  //Necessary?
 	unsigned char frame_got[TAM_FRAME];
 	unsigned char BCC2 = 0x00;
 
 	//DISC
 	supervisionFrame(DISC, FR_A_TX, FR_C_DISC);
-	// //SET
-	// supervisionFrame(SET, FR_A_TX, FR_C_SET);
-	//Necessary? Com a nova implementacao, SET tem possibilidade de entrar em llread()?
 
 	while(!done) {
 		switch(state) {
@@ -318,6 +314,7 @@ int llread(int port, unsigned char *buffer) {
 				got = getFrame(port, frame_got, RX);
 				if(got == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) { //daft punk - one more time
+						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 						bad++;
 					} else {
 						fprintf(stderr, "\n\nNothing from TX after %d tries. Giving up...\n", TRIES);
@@ -329,11 +326,12 @@ int llread(int port, unsigned char *buffer) {
 				break;
 
 			case 1: //check Bcc1 first
-				if((frame_got[1] != ESC) && (frame_got[2] != ESC) && (frame_got[3] != ESC)) {
+				// if((frame_got[1] != ESC) && (frame_got[2] != ESC) && (frame_got[3] != ESC)) {
 					if(frame_got[3] != (frame_got[1]^frame_got[2])) {  //Bcc1 != A^C
 						state = 5; //REJ
+						break;
 					}
-				}
+				// }
 				state = 2;
 				break;
 
@@ -346,7 +344,7 @@ int llread(int port, unsigned char *buffer) {
 				break;
 
 			case 3: //destuffing
-				for (i = 1; i < got - 1; i++) {
+				for (i = 4; i < got - 1; i++) {
 					if((frame_got[i] == ESC) && ((frame_got[i+1] == FR_F_AUX) || (frame_got[i+1] == ESC_AUX))) {
 						if(frame_got[i+1] == FR_F_AUX) {
 							frame_got[i] = FR_F;
@@ -370,6 +368,7 @@ int llread(int port, unsigned char *buffer) {
 				}
 				if (BCC2 != frame_got[got-2]) {
 					state = 6; //REJ
+					break;
 				}
 				state = 5;
 				break;
@@ -391,7 +390,7 @@ int llread(int port, unsigned char *buffer) {
 					buffer[j] = frame_got[i];
 				}
 				//SEND RR
-				tcflush(port, TCIOFLUSH); //clear port
+				// tcflush(port, TCIOFLUSH); //clear port
 				if (write(port, RR, 5) < 0) {
 					perror("RR write");
 					return -1;
@@ -415,12 +414,12 @@ int llread(int port, unsigned char *buffer) {
 				}
 
 				//send REJ
-				tcflush(port, TCIOFLUSH); //clear port
+				// tcflush(port, TCIOFLUSH); //clear port
 				if (write(port, REJ, 5) < 0) {
 					perror("REJ write");
 					return -1;
 				}
-				memset(frame_got, 0, TAM_FRAME);  //cleans buffer if REJ sent.
+				// memset(frame_got, 0, TAM_FRAME);  //cleans buffer if REJ sent.
 				state = 0;  //go back and listen the port again
 				break;
 
@@ -431,14 +430,13 @@ int llread(int port, unsigned char *buffer) {
 						supervisionFrame(RR_LOST, FR_A_TX, FR_C_RR0);
 				}
 
-				tcflush(port, TCIOFLUSH); //clear port
+				// tcflush(port, TCIOFLUSH); //clear port
 				if (write(port, RR_LOST, 5) < 0) {
 					perror("llwrite(): RR_LOST");
 					return -1;
 				}
 				memset(frame_got, 0, TAM_FRAME);  //cleans buffer if RR is lost.
 				return DUPLICATE;
-				// break;  //Necessary?
 
 			default:
 				break;
@@ -472,7 +470,14 @@ int llwrite(int port, unsigned char* buffer, int length) {
 	while(!done) {
 		switch(state) {
 			case 0: //writes frame on port
-				tcflush(port, TCIOFLUSH);  //clear port
+				// tcflush(port, TCIOFLUSH);  //clear port
+				// /*** DEBUG INIT ***/
+				// fprintf(stderr, "\n\nFrame sent: |");
+				// for(int i = 0; i < frame_len; i++) {
+				// 	fprintf(stderr, "%x|", frame_sent[i]);
+				// }
+				// fprintf(stderr, "\n\n");
+				// /*** DEBUG FINIT ***/
 				sent = write(port, frame_sent, frame_len);
 				state = 1;
 				break;
@@ -481,6 +486,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 				res = getFrame(port, frame_got, TX);
 				if(res == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) {  //let's give another try
+						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 						bad++;
 						state = 0;
 					} else {   //you're fresh out of luck, pal
@@ -539,7 +545,7 @@ int llclose(int port, int MODE) {
 						return -1;
 					}
 					fprintf(stderr, "\nSending DISC...\n");
-					tcflush(port, TCIOFLUSH);  //clear port
+					// tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {  //0 ou 5?
 						perror("write()");
 						return -1;
@@ -643,7 +649,7 @@ int llclose(int port, int MODE) {
 						return -1;
 					}
 					fprintf(stderr, "\nSending DISC...\n");
-					tcflush(port, TCIOFLUSH);  //clear port
+					// tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
 						return -1;
@@ -728,7 +734,7 @@ int llclose(int port, int MODE) {
 
 				case 6: //DISC received, send UA
 					alarm(0);
-					tcflush(port, TCIOFLUSH);  //clear port
+					// tcflush(port, TCIOFLUSH);  //clear port
 					fprintf(stderr, "\nSending UA\n");
 					if((res = write(port, UA, 5)) < 0) {  //0 ou 5?
 						perror("write()");

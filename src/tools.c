@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <math.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #include "tools.h"
 
@@ -23,10 +24,21 @@ void alarmHandler() {
 
 void randomError (unsigned char *buffer, int buffer_size) {
 
-    int indice = 0;
 	// float divi = 0;
-	// int err = 0;
-	// err = rand() % 100; //n de 0 a 99 que corresponde a percentagem de erro
+  int indice = 0;
+	struct timeval micros;
+	int err = 0;
+	gettimeofday(&micros, NULL);
+	srand(micros.tv_usec);
+	err = rand() % 101; //n de 0 a 99 que corresponde a percentagem de erro
+
+	if (err < FER) {
+		gettimeofday(&micros, NULL);
+		srand(micros.tv_usec);
+		indice = rand() % (buffer_size - 2) + 1;
+
+		buffer[indice] = 0x00;
+	}
 	// fprintf(stderr, "\nerr: %d\n\n", err);
 	// divi = (float) 100/FER;
 	// if((count_frames % divi) == 0) {
@@ -38,18 +50,14 @@ void randomError (unsigned char *buffer, int buffer_size) {
 	// 	fprintf(stderr, "buffer[%d] d/e: %x\t - ", indice, buffer[indice]);
 	// }
 
-	if(count_frames % 10 < FER/10) {
-			indice = rand() % (buffer_size - 2) + 1; //de 1 a 8
-			//se p.e. buffer_size = 10 (pode mudar apenas de 1~8, todos menos as duas flags);
-
-			fprintf(stderr, "\tbuffer[%d] a/e: %x\t - ", indice, buffer[indice]);
-			buffer[indice] = 0x00;
-			fprintf(stderr, "buffer[%d] d/e: %x\t - ", indice, buffer[indice]);
-	}
-
-		// if (err < FER) {
-		//
-		// }
+	// if(count_frames % 10 < FER/10) {
+	// 		indice = rand() % (buffer_size - 2) + 1; //de 1 a 8
+	// 		//se p.e. buffer_size = 10 (pode mudar apenas de 1~8, todos menos as duas flags);
+	//
+	// 		fprintf(stderr, "\tbuffer[%d] a/e: %x\t - ", indice, buffer[indice]);
+	// 		buffer[indice] = 0x00;
+	// 		fprintf(stderr, "buffer[%d] d/e: %x\t - ", indice, buffer[indice]);
+	// }
 
 } //randomError()
 

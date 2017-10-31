@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <math.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #include "tools.h"
 #include "datalink.h"
@@ -26,7 +27,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 	int res = 0, count_bytes = 0, count_bytes2 = 0, ler = 0;
 	int source, output, clr = 0, state = 0, done = 0;
 	int seq_num = 0, i = 0, sum = 0;
-	// float divi = 0;
+	float divi = 0;
 
 	fer_count = 0;
 	count_frames = 0;
@@ -191,8 +192,8 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				fprintf(stderr, "\n\n\t llwrite() success: bytes as frames: %d bytes; bytes as data: %d bytes",count_bytes, count_bytes2);
 
 				//FRAME ERROR RATE
-				// divi = (float) fer_count/count_frames;
-				// fprintf(stderr, "\nFER: %2.4f%% - fer_count %d - count_frames %d\n\n", (float) divi*100, fer_count, count_frames);
+				divi = (float) fer_count/count_frames;
+				fprintf(stderr, "\nFER: %2.4f%% - fer_count %d - count_frames %d\n\n", (float) divi*100, fer_count, count_frames);
 
 				fprintf(stderr, "\n\n TESTING llclose()...\n");
 

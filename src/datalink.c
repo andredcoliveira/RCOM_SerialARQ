@@ -329,7 +329,7 @@ int llread(int port, unsigned char *buffer) {
 			case 1: //check Bcc1 first
 				// if((frame_got[1] != ESC) && (frame_got[2] != ESC) && (frame_got[3] != ESC)) {
 					if(frame_got[3] != (frame_got[1]^frame_got[2])) {  //Bcc1 != A^C
-						state = 5; //REJ
+						state = 6; //REJ
 						break;
 					}
 				// }
@@ -471,20 +471,19 @@ int llwrite(int port, unsigned char* buffer, int length) {
 	while(!done) {
 		switch(state) {
 			case 0: //writes frame on port
-				// tcflush(port, TCIOFLUSH);  //clear port
-				// /*** DEBUG INIT ***/
-				// fprintf(stderr, "\n\nFrame sent: |");
-				// for(int i = 0; i < frame_len; i++) {
-				// 	fprintf(stderr, "%x|", frame_sent[i]);
-				// }
-				// fprintf(stderr, "\n\n");
-				// /*** DEBUG FINIT ***/
 				sent = write(port, frame_sent, frame_len);
 				state = 1;
 				break;
 
 			case 1: //listens port for ACK or NACK
 				res = getFrame(port, frame_got, TX);
+				/*** DEBUG INIT ***/
+				fprintf(stderr, "\n\nframe_got: |");
+				for(int i = 0; i < res; i++) {
+					fprintf(stderr, "%x|", frame_got[i]);
+				}
+				fprintf(stderr, "\n\n");
+				/*** DEBUG FINIT ***/
 				if(res == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) {  //let's give another try
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
@@ -504,6 +503,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 					sendNumber = 1 - sendNumber;
 					done = 1;
 				} else if(memcmp(REJ, frame_got, 5) == 0){   //you still have a shot at this, bud
+					fer_count++;
 					bad = 0;
 					state = 0;
 				} else {   //what is this, a frame for ants?
@@ -526,6 +526,8 @@ int llclose(int port, int MODE) {
 	int state = 0, res = 0, bad = 0, done = 0;
 	unsigned char DISC[5], UA[5];
 	unsigned char get;
+	int got = 0;
+	unsigned char frame_got[TAM_FRAME];
 
 	/*** ALTERACAO: mesma história de llopen()
 	NOTA: verificar se valor de res = 5 em cada escrita? ***/
@@ -641,101 +643,40 @@ int llclose(int port, int MODE) {
 		return 0;
 
 	} else if (MODE == TX) {
-		timer_seconds = 3;
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o DISC
-					if(bad >= 3) {
-						fprintf(stderr, "\nAttempt limit reached; exiting...\n");
-						return -1;
-					}
 					fprintf(stderr, "\nSending DISC...\n");
-					// tcflush(port, TCIOFLUSH);  //clear port
+					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
 						return -1;
 					}
-					alarm(timer_seconds);
-					flag_alarm = 0;
-					// fprintf(stderr, "\nDISC frame sent: |%x|%x|%x|%x|%x|;\t bytes sent: %d\n\n", DISC[0], DISC[1], DISC[2], DISC[3], DISC[4], res);
 					state = 1;
 					break;
 
-				case 1:  //get first Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 2;
-					} else {
-						if(flag_alarm) {
-							bad++;
-							state = 0;
-						}
-					}
-					break;
-
-				case 2:  //get A
-					res = read(port, &get, 1);
-					if(get == FR_A_TX) {
-						state = 3;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
+				case 1:  //get DISC
+					got = getFrame(port, frame_got, TX);
+					if(got == ERR_READ_TIMEOUT) {
+						if(bad < TRIES) {
+							fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 							bad++;
 							state = 0;
 						} else {
-							state = 1;
+							fprintf(stderr, "\n\nNothing from RX after %d tries. Giving up...\n", TRIES);
+							return -1;
 						}
-					}
-					break;
-
-				case 3: //get C
-					res = read(port, &get, 1);
-					if(get == FR_C_DISC) {
-						state = 4;
 					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
-							bad++;
-							state = 0;
+						if(memcmp(frame_got, DISC, 5) == 0) {
+							state = 2;
 						} else {
-							state = 1;
+							state = 0;
 						}
 					}
 					break;
 
-				case 4: //get and check Bcc1
-					res = read(port, &get, 1);
-					if(get == (FR_A_TX^FR_C_DISC)) {
-						state = 5;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
-							bad++;
-							state = 0;
-						} else {
-							state = 1;
-						}
-					}
-					break;
-
-				case 5: //Bcc1 OK, get closing Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 6;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
-							bad++;
-							state = 0;
-						} else {
-							state = 1;
-						}
-					}
-					break;
-
-				case 6: //DISC received, send UA
-					alarm(0);
-					// tcflush(port, TCIOFLUSH);  //clear port
+				case 2: //DISC received, send UA
+					tcflush(port, TCIOFLUSH);  //clear port
 					fprintf(stderr, "\nSending UA\n");
 					if((res = write(port, UA, 5)) < 0) {  //0 ou 5?
 						perror("write()");

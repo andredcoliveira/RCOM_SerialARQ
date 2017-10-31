@@ -316,6 +316,7 @@ int llread(int port, unsigned char *buffer) {
 					if(bad < TRIES) { //daft punk - one more time
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 						bad++;
+						state = 6;
 					} else {
 						fprintf(stderr, "\n\nNothing from TX after %d tries. Giving up...\n", TRIES);
 						return -1;

@@ -14,7 +14,7 @@
 #define DUPLICATE     -2      			//quando recebe uma trama duplicada, descarta
 #define CALL_CLOSE  	-1 						//quando recebe DISC em llread
 #define FER				   	 0			  		//Frame Error Rate em percentagem
-#define NUM_TLV		  	 3
+#define NUM_TLV		  	 4
 #define DIRECTORY      "/output/"
 #define WAIT_TIME_RX   3
 #define WAIT_TIME_TX   3

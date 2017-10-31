@@ -101,9 +101,16 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				}
 
 				// properties[3].T = 0x03; //Mode - Permissoes
-				// properties[3].L = ;
-				// properties[3].V = ;
-				//
+        properties[3].T = 0x03; //Mode - Permissoes
+				properties[3].L = sizeof(detalhes.file_mode);
+				properties[3].V = (unsigned char *) malloc(properties[3].L);
+				sum = 0;
+				for(i = 0; i < properties[3].L; i++) {
+					res = (detalhes.file_mode - sum) % (int)pow(256,3-i);
+					properties[3].V[i] = (detalhes.file_mode - res) / pow(256,3-i) - sum;
+					sum += properties[3].V[i] * pow(256,3-i);
+				}
+
 				// properties[4].T = 0x04; //Data de modificacao
 				// properties[4].L = ;
 				// properties[4].V = ;
@@ -286,6 +293,26 @@ int receiver(int fd_port) {
 									fprintf(stderr, "start_file_flags = %d\n\n", start.file_flags);
 									break;
 
+                case 0x03: //Mode - Permissoes
+                  start.file_mode = pow(256,3) * (int)(properties_start[i].V[0]) +
+                                      pow(256,2) * (int)(properties_start[i].V[1]) +
+                                      pow(256,1) * (int)(properties_start[i].V[2]) +
+                                      pow(256,0) * (int)(properties_start[i].V[3]);
+                  // fprintf(stderr, "\nstart.file_mode = %d\n", start.file_mode);
+                  printf("File Permissions: ");
+                  printf( (S_ISDIR(start.file_mode)) ? "d" : "-");
+                  printf( (start.file_mode & S_IRUSR) ? "r" : "-");
+                  printf( (start.file_mode & S_IWUSR) ? "w" : "-");
+                  printf( (start.file_mode & S_IXUSR) ? "x" : "-");
+                  printf( (start.file_mode & S_IRGRP) ? "r" : "-");
+                  printf( (start.file_mode & S_IWGRP) ? "w" : "-");
+                  printf( (start.file_mode & S_IXGRP) ? "x" : "-");
+                  printf( (start.file_mode & S_IROTH) ? "r" : "-");
+                  printf( (start.file_mode & S_IWOTH) ? "w" : "-");
+                  printf( (start.file_mode & S_IXOTH) ? "x" : "-");
+                  printf("\n\n");
+                  break;
+
 								default:
 									break;
 
@@ -304,7 +331,7 @@ int receiver(int fd_port) {
 
 				//strcat(output_path, (char *)start.file_name); //ANALISAR
 
-				if((output = open((char *)start.file_name, start.file_flags, S_IRWXU)) < 0) {
+				if((output = open((char *)start.file_name, start.file_flags, start.file_mode)) < 0) {
 					perror("open");
 					return -1;
 				}
@@ -411,10 +438,25 @@ int receiver(int fd_port) {
 								fprintf(stderr, "end_file_flags = %d\n", end.file_flags);
 								break;
 
-                            //ANALISAR
-							// case 0x03: //Mode - Permissoes
-							//
-							// 	break;
+              case 0x03: //Mode - Permissoes
+                end.file_mode = pow(256,3) * (int)(properties_start[i].V[0]) +
+                                  pow(256,2) * (int)(properties_start[i].V[1]) +
+                                  pow(256,1) * (int)(properties_start[i].V[2]) +
+                                  pow(256,0) * (int)(properties_start[i].V[3]);
+                // fprintf(stderr, "\nend.file_mode = %d\n", end.file_mode);
+                printf("File Permissions: ");
+                printf( (S_ISDIR(end.file_mode)) ? "d" : "-");
+                printf( (end.file_mode & S_IRUSR) ? "r" : "-");
+                printf( (end.file_mode & S_IWUSR) ? "w" : "-");
+                printf( (end.file_mode & S_IXUSR) ? "x" : "-");
+                printf( (end.file_mode & S_IRGRP) ? "r" : "-");
+                printf( (end.file_mode & S_IWGRP) ? "w" : "-");
+                printf( (end.file_mode & S_IXGRP) ? "x" : "-");
+                printf( (end.file_mode & S_IROTH) ? "r" : "-");
+                printf( (end.file_mode & S_IWOTH) ? "w" : "-");
+                printf( (end.file_mode & S_IXOTH) ? "x" : "-");
+                printf("\n\n");
+                break;
 							//
 							// case 0x04: //Data de modificacao
 							//

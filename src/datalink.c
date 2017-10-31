@@ -539,101 +539,37 @@ int llclose(int port, int MODE) {
 	supervisionFrame(UA, FR_A_TX, FR_C_UA);
 
 	if (MODE == RX) {
-		timer_seconds = 3;
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o DISC
-					if(bad >= 3) {
-						fprintf(stderr, "\nAttempt limit reached; exiting...\n");
-						return -1;
-					}
 					fprintf(stderr, "\nSending DISC...\n");
-					// tcflush(port, TCIOFLUSH);  //clear port
-					if((res = write(port, DISC, 5)) < 0) {  //0 ou 5?
+					tcflush(port, TCIOFLUSH);  //clear port
+					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
 						return -1;
 					}
-					alarm(timer_seconds);
-					flag_alarm = 0;
 					state = 1;
 					break;
 
-				case 1:  //get first Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 2;
-					} else {
-						if(flag_alarm) {
-							bad++;
-							state = 0;
-						}
-					}
-					break;
-
-				case 2:  //get A
-					res = read(port, &get, 1);
-					if(get == FR_A_TX) {
-						state = 3;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
+				case 1:  //get UA
+					got = getFrame(port, frame_got, RX);
+					if(got == ERR_READ_TIMEOUT) {
+						if(bad < TRIES) {
+							fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 							bad++;
 							state = 0;
 						} else {
-							state = 1;
+							fprintf(stderr, "\n\nNothing from RX after %d tries. Giving up...\n", TRIES);
+							return -1;
 						}
-					}
-					break;
-
-				case 3: //get C
-					res = read(port, &get, 1);
-					if(get == FR_C_UA) {
-						state = 4;
 					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
-							bad++;
-							state = 0;
+						if(memcmp(frame_got, UA, 5) == 0) {
+							fprintf(stderr, "\nConnection successfully terminated.\n");
+							done = 1;
 						} else {
-							state = 1;
+							state = 0;
 						}
 					}
-					break;
-
-				case 4: //get and check Bcc1
-					res = read(port, &get, 1);
-					if(get == (FR_A_TX^FR_C_UA)) {
-						state = 5;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
-							bad++;
-							state = 0;
-						} else {
-							state = 1;
-						}
-					}
-					break;
-
-				case 5: //Bcc1 OK, get closing Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 6;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending DISC message again...");
-							bad++;
-							state = 0;
-						} else {
-							state = 1;
-						}
-					}
-					break;
-
-				case 6: //UA received
-					alarm(0);
-					fprintf(stderr, "\nConnection successfully terminated.\n");
-					done = 1;
 					break;
 
 				default:

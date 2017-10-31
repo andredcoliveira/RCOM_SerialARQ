@@ -290,7 +290,7 @@ int receiver(int fd_port) {
 																	 	 pow(256,2) * (int)(properties_start[i].V[1]) +
 																	 	 pow(256,1) * (int)(properties_start[i].V[2]) +
 																	 	 pow(256,0) * (int)(properties_start[i].V[3]);
-									fprintf(stderr, "start_file_flags = %d\n\n", start.file_flags);
+									fprintf(stderr, "start_file_flags = %d\n", start.file_flags);
 									break;
 
                 case 0x03: //Mode - Permissoes
@@ -298,19 +298,18 @@ int receiver(int fd_port) {
                                       pow(256,2) * (int)(properties_start[i].V[1]) +
                                       pow(256,1) * (int)(properties_start[i].V[2]) +
                                       pow(256,0) * (int)(properties_start[i].V[3]);
-                  // fprintf(stderr, "\nstart.file_mode = %d\n", start.file_mode);
-                  printf("File Permissions: ");
-                  printf( (S_ISDIR(start.file_mode)) ? "d" : "-");
-                  printf( (start.file_mode & S_IRUSR) ? "r" : "-");
-                  printf( (start.file_mode & S_IWUSR) ? "w" : "-");
-                  printf( (start.file_mode & S_IXUSR) ? "x" : "-");
-                  printf( (start.file_mode & S_IRGRP) ? "r" : "-");
-                  printf( (start.file_mode & S_IWGRP) ? "w" : "-");
-                  printf( (start.file_mode & S_IXGRP) ? "x" : "-");
-                  printf( (start.file_mode & S_IROTH) ? "r" : "-");
-                  printf( (start.file_mode & S_IWOTH) ? "w" : "-");
-                  printf( (start.file_mode & S_IXOTH) ? "x" : "-");
-                  printf("\n\n");
+                  fprintf(stderr, "start.file_mode: ");
+                  fprintf(stderr, (S_ISDIR(start.file_mode)) ? "d" : "-");
+                  fprintf(stderr, (start.file_mode & S_IRUSR) ? "r" : "-");
+                  fprintf(stderr, (start.file_mode & S_IWUSR) ? "w" : "-");
+                  fprintf(stderr, (start.file_mode & S_IXUSR) ? "x" : "-");
+                  fprintf(stderr, (start.file_mode & S_IRGRP) ? "r" : "-");
+                  fprintf(stderr, (start.file_mode & S_IWGRP) ? "w" : "-");
+                  fprintf(stderr, (start.file_mode & S_IXGRP) ? "x" : "-");
+                  fprintf(stderr, (start.file_mode & S_IROTH) ? "r" : "-");
+                  fprintf(stderr, (start.file_mode & S_IWOTH) ? "w" : "-");
+                  fprintf(stderr, (start.file_mode & S_IXOTH) ? "x" : "-");
+                  fprintf(stderr,"\n\n");
                   break;
 
 								default:
@@ -443,19 +442,18 @@ int receiver(int fd_port) {
                                   pow(256,2) * (int)(properties_start[i].V[1]) +
                                   pow(256,1) * (int)(properties_start[i].V[2]) +
                                   pow(256,0) * (int)(properties_start[i].V[3]);
-                // fprintf(stderr, "\nend.file_mode = %d\n", end.file_mode);
-                printf("File Permissions: ");
-                printf( (S_ISDIR(end.file_mode)) ? "d" : "-");
-                printf( (end.file_mode & S_IRUSR) ? "r" : "-");
-                printf( (end.file_mode & S_IWUSR) ? "w" : "-");
-                printf( (end.file_mode & S_IXUSR) ? "x" : "-");
-                printf( (end.file_mode & S_IRGRP) ? "r" : "-");
-                printf( (end.file_mode & S_IWGRP) ? "w" : "-");
-                printf( (end.file_mode & S_IXGRP) ? "x" : "-");
-                printf( (end.file_mode & S_IROTH) ? "r" : "-");
-                printf( (end.file_mode & S_IWOTH) ? "w" : "-");
-                printf( (end.file_mode & S_IXOTH) ? "x" : "-");
-                printf("\n\n");
+                fprintf(stderr, "end.file_mode: ");
+                fprintf(stderr, (S_ISDIR(end.file_mode)) ? "d" : "-");
+                fprintf(stderr, (end.file_mode & S_IRUSR) ? "r" : "-");
+                fprintf(stderr, (end.file_mode & S_IWUSR) ? "w" : "-");
+                fprintf(stderr, (end.file_mode & S_IXUSR) ? "x" : "-");
+                fprintf(stderr, (end.file_mode & S_IRGRP) ? "r" : "-");
+                fprintf(stderr, (end.file_mode & S_IWGRP) ? "w" : "-");
+                fprintf(stderr, (end.file_mode & S_IXGRP) ? "x" : "-");
+                fprintf(stderr, (end.file_mode & S_IROTH) ? "r" : "-");
+                fprintf(stderr, (end.file_mode & S_IWOTH) ? "w" : "-");
+                fprintf(stderr, (end.file_mode & S_IXOTH) ? "x" : "-");
+                fprintf(stderr, "\n\n");
                 break;
 							//
 							// case 0x04: //Data de modificacao

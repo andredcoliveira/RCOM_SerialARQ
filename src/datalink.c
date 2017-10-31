@@ -79,12 +79,12 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	return b;  //returns frame length
 
 } //getFrame()
-//llopen revamped: working 100%
+
 int llopen(int port, int MODE) {
 
-  int state = 0, res = 0, done = 0, bad = 0;
+  int state = 0, res = 0, done = 0, bad = 0, got = 0;
 	unsigned char SET[5], UA[5];
-	unsigned char get;
+	unsigned char frame_got[TAM_FRAME];
 
 	/*** ALTERACAO: alterado de modo a nao precisar de readFrame, senao dava
 	merda, dependia de quem começava
@@ -97,99 +97,37 @@ int llopen(int port, int MODE) {
 	supervisionFrame(UA, FR_A_TX, FR_C_UA);
 
 	if(MODE == TX) {
-		timer_seconds = 3;
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o SET
-					if(bad >= 3) {
-						fprintf(stderr, "\nAttempt limit reached; exiting...\n");
+					fprintf(stderr, "\nSending SET...\n");
+					tcflush(port, TCIOFLUSH);  //clear port
+					if((res = write(port, SET, 5)) < 0) {   //0 ou 5?
+						perror("write()");
 						return -1;
 					}
-					fprintf(stderr, "\nSending SET...\n");
-					// tcflush(port, TCIOFLUSH);  //clear port
-					res = write(port, SET, 5);
-					alarm(timer_seconds);
-					flag_alarm = 0;
-					// fprintf(stderr, "\nSET frame sent: |%x|%x|%x|%x|%x|;\t bytes sent: %d\n\n", SET[0], SET[1], SET[2], SET[3], SET[4], res);
 					state = 1;
 					break;
 
-				case 1:  //get first Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 2;
-					} else {
-						if(flag_alarm) {
-							bad++;
-							state = 0;
-						}
-					}
-					break;
-
-				case 2:  //get A
-					res = read(port, &get, 1);
-					if(get == FR_A_TX) {
-						state = 3;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending SET message again...");
+				case 1:  //get UA
+					got = getFrame(port, frame_got, TX);
+					if(got == ERR_READ_TIMEOUT) {
+						if(bad < TRIES) {
+							fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 							bad++;
 							state = 0;
 						} else {
-							state = 1;
+							fprintf(stderr, "\n\nNothing from RX after %d tries. Giving up...\n", TRIES);
+							return -1;
 						}
-					}
-					break;
-
-				case 3: //get C
-					res = read(port, &get, 1);
-					if(get == FR_C_UA) {
-						state = 4;
 					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending SET message again...");
-							bad++;
-							state = 0;
+						if(memcmp(frame_got, UA, 5) == 0) {
+							fprintf(stderr, "\nConnection successfully established.\n");
+							done = 1;
 						} else {
-							state = 1;
+							state = 0;
 						}
 					}
-					break;
-
-				case 4: //get and check Bcc1
-					res = read(port, &get, 1);
-					if(get == (FR_A_TX^FR_C_UA)) {
-						state = 5;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending SET message again...");
-							bad++;
-							state = 0;
-						} else {
-							state = 1;
-						}
-					}
-					break;
-
-				case 5: //Bcc1 OK, get closing Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 6;
-					} else {
-						if(flag_alarm) {
-							fprintf(stderr, "\nSending SET message again...");
-							bad++;
-							state = 0;
-						} else {
-							state = 1;
-						}
-					}
-					break;
-
-				case 6: //UA received
-					alarm(0);
-					fprintf(stderr, "\nConnection successfully established.\n");
-					done = 1;
 					break;
 
 				default:
@@ -198,93 +136,34 @@ int llopen(int port, int MODE) {
 		}
 
 	} else if(MODE == RX) {
-		timer_seconds = 10;
 		while(!done) {
 			switch(state) {
-				case 0: //set Timer
-					if(bad >= 1) {
-						fprintf(stderr, "\nExiting...\n");
-						return -1;
-					}
-					alarm(timer_seconds);
-					flag_alarm = 0;
-					state = 1;
-					break;
-
-				case 1:  //get first Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 2;
-					} else {
-						if(flag_alarm) {
+				case 0: //get SET
+					got = getFrame(port, frame_got, TX);
+					if(got == ERR_READ_TIMEOUT) {
+						if(bad < TRIES) {
+							fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
 							bad++;
 							state = 0;
+						} else {
+							fprintf(stderr, "\n\nNothing from TX after %d tries. Giving up...\n", TRIES);
+							return -1;
+						}
+					} else {
+						if(memcmp(frame_got, SET, 5) == 0) {
+							state = 1;
 						}
 					}
 					break;
 
-				case 2:  //get A
-					res = read(port, &get, 1);
-					if(get == FR_A_TX) {
-						state = 3;
-					} else {
-						 if(flag_alarm) {
-							 bad++;
-							 state = 0;
-						 } else {
-							 state = 1;
-						 }
+				case 1:  //send UA
+					fprintf(stderr, "\nSending UA...\n");
+					tcflush(port, TCIOFLUSH);  //clear port
+					if((res = write(port, UA, 5)) < 0) {   //0 ou 5?
+						perror("write()");
+						return -1;
 					}
-					break;
-
-				case 3: //get C
-					res = read(port, &get, 1);
-					if(get == FR_C_SET) {
-						state = 4;
-					} else {
-						 if(flag_alarm) {
-							 bad++;
-							 state = 0;
-						 } else {
-							 state = 1;
-						 }
-					}
-					break;
-
-				case 4: //get and check Bcc1
-					res = read(port, &get, 1);
-					if(get == (FR_A_TX^FR_C_SET)) {
-						state = 5;
-					} else {
-						 if(flag_alarm) {
-							 bad++;
-							 state = 0;
-						 } else {
-							 state = 1;
-						 }
-					}
-					break;
-
-				case 5: //Bcc1 OK, get closing Flag
-					res = read(port, &get, 1);
-					if(get == FR_F) {
-						state = 6;
-					} else {
-						 if(flag_alarm) {
-							 bad++;
-							 state = 0;
-						 } else {
-							 state = 1;
-						 }
-					}
-					break;
-
-				case 6: //SET received, send UA
-					alarm(0);
-					fprintf(stderr, "\nGOOD DOGGY DOG RX, sending UA...\n");
-					// tcflush(port, TCIOFLUSH);  //clear port
-					res = write(port, UA, 5);
-					fprintf(stderr, "\nUA frame sent: |%x|%x|%x|%x|%x|;\t bytes sent: %d\n\n", UA[0], UA[1], UA[2], UA[3], UA[4], res);
+					fprintf(stderr, "\nConnection successfully established.\n");
 					done = 1;
 					break;
 
@@ -297,7 +176,7 @@ int llopen(int port, int MODE) {
 	return 0;
 
 } //llopen()
-//llread revamped: working 100% (ver nota em getFrame())
+
 int llread(int port, unsigned char *buffer) {
 
   int state = 0, bad = 0, i = 0, j = 0, done = 0, got = 0;
@@ -319,7 +198,7 @@ int llread(int port, unsigned char *buffer) {
 						state = 6;
 					} else {
 						fprintf(stderr, "\n\nNothing from TX after %d tries. Giving up...\n", TRIES);
-						return -1;
+						return -3;
 					}
 				} else {
 					state = 1;
@@ -391,10 +270,10 @@ int llread(int port, unsigned char *buffer) {
 					buffer[j] = frame_got[i];
 				}
 				//SEND RR
-				// tcflush(port, TCIOFLUSH); //clear port
+				tcflush(port, TCIOFLUSH); //clear port
 				if (write(port, RR, 5) < 0) {
 					perror("RR write");
-					return -1;
+					return -3;
 				}
 				done = 1;
 				break;
@@ -415,10 +294,10 @@ int llread(int port, unsigned char *buffer) {
 				}
 
 				//send REJ
-				// tcflush(port, TCIOFLUSH); //clear port
+				tcflush(port, TCIOFLUSH); //clear port
 				if (write(port, REJ, 5) < 0) {
 					perror("REJ write");
-					return -1;
+					return -3;
 				}
 				// memset(frame_got, 0, TAM_FRAME);  //cleans buffer if REJ sent.
 				state = 0;  //go back and listen the port again
@@ -431,10 +310,10 @@ int llread(int port, unsigned char *buffer) {
 						supervisionFrame(RR_LOST, FR_A_TX, FR_C_RR0);
 				}
 
-				// tcflush(port, TCIOFLUSH); //clear port
+				tcflush(port, TCIOFLUSH); //clear port
 				if (write(port, RR_LOST, 5) < 0) {
 					perror("llwrite(): RR_LOST");
-					return -1;
+					return -3;
 				}
 				memset(frame_got, 0, TAM_FRAME);  //cleans buffer if RR is lost.
 				return DUPLICATE;
@@ -447,7 +326,7 @@ int llread(int port, unsigned char *buffer) {
 	return (got - 6);  //frame length without headers
 
 } //llread()
-//llwrite revamped: working 100%
+
 int llwrite(int port, unsigned char* buffer, int length) {
 
 	int state = 0, res = 0, bad = 0, done = 0, sent = 0, frame_len = 0;
@@ -477,13 +356,13 @@ int llwrite(int port, unsigned char* buffer, int length) {
 
 			case 1: //listens port for ACK or NACK
 				res = getFrame(port, frame_got, TX);
-				/*** DEBUG INIT ***/
-				fprintf(stderr, "\n\nframe_got: |");
-				for(int i = 0; i < res; i++) {
-					fprintf(stderr, "%x|", frame_got[i]);
-				}
-				fprintf(stderr, "\n\n");
-				/*** DEBUG FINIT ***/
+				// /*** DEBUG INIT ***/
+				// fprintf(stderr, "\n\nframe_got: |");
+				// for(int i = 0; i < res; i++) {
+				// 	fprintf(stderr, "%x|", frame_got[i]);
+				// }
+				// fprintf(stderr, "\n\n");
+				// /*** DEBUG FINIT ***/
 				if(res == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) {  //let's give another try
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
@@ -520,13 +399,11 @@ int llwrite(int port, unsigned char* buffer, int length) {
 	return sent;
 
 } //llwrite()
-//llclose revamped: working 100%
+
 int llclose(int port, int MODE) {
 
-	int state = 0, res = 0, bad = 0, done = 0;
+	int state = 0, res = 0, bad = 0, done = 0, got = 0;
 	unsigned char DISC[5], UA[5];
-	unsigned char get;
-	int got = 0;
 	unsigned char frame_got[TAM_FRAME];
 
 	/*** ALTERACAO: mesma história de llopen()

@@ -12,7 +12,7 @@
 #define TAM_FRAME 	  1024	  			//size of frames
 #define TAM_BUF       512    			  //size of buffer
 #define DUPLICATE     -2      			//quando recebe uma trama duplicada, descarta
-#define CALL_CLOSE  	-3 						//quando recebe DISC em llread
+#define CALL_CLOSE  	-1 						//quando recebe DISC em llread
 #define FER				   	 0			  		//Frame Error Rate em percentagem
 #define NUM_TLV		  	 3
 #define DIRECTORY      "/output/"

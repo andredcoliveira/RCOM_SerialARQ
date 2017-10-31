@@ -24,21 +24,22 @@ void alarmHandler() {
 
 void randomError (unsigned char *buffer, int buffer_size) {
 
-	// float divi = 0;
   int indice = 0;
 	struct timeval micros;
 	int err = 0;
 	gettimeofday(&micros, NULL);
 	srand(micros.tv_usec);
-	err = rand() % 101; //n de 0 a 99 que corresponde a percentagem de erro
+	err = rand() % 101; //n de 0 a 100 que corresponde a percentagem de erro
 
 	if (err < FER) {
 		gettimeofday(&micros, NULL);
 		srand(micros.tv_usec);
-		indice = rand() % (buffer_size - 2) + 1;
+		indice = rand() % (buffer_size - 3) + 1;
 
 		buffer[indice] = 0x00;
 	}
+
+	// float divi = 0;
 	// fprintf(stderr, "\nerr: %d\n\n", err);
 	// divi = (float) 100/FER;
 	// if((count_frames % divi) == 0) {

@@ -47,11 +47,12 @@
 #define TRIES							 3
 
 typedef struct {
-	//time stamp variable (ver utime())
 	unsigned char* file_name;
 	int file_length;
 	int file_flags;
 	mode_t file_mode;
+	struct timespec file_time_a;
+	struct timespec file_time_m;
 } details;
 
 typedef struct {

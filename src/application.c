@@ -27,7 +27,9 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 	int res = 0, count_bytes = 0, count_bytes2 = 0, ler = 0;
 	int source, output, clr = 0, state = 0, done = 0;
 	int seq_num = 0, i = 0, sum = 0;
+  long sum_long = 0, res_long = 0;
 	float divi = 0;
+  struct timespec file_time_original[2];
 
 	fer_count = 0;
 	count_frames = 0;
@@ -51,7 +53,8 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				strcpy((char *) detalhes.file_name, source_path);
 				detalhes.file_flags = O_CREAT | O_APPEND | O_TRUNC | O_WRONLY;
 				detalhes.file_mode = fileStat.st_mode;
-				// detalhes.file_date_lastMod = fileStat.st_mtim;
+				detalhes.file_time_a = fileStat.st_atim;
+				detalhes.file_time_m = fileStat.st_mtim;
 
 				source = open(source_path, O_RDONLY);
 
@@ -59,6 +62,17 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					perror("open");                                                 //DEBUG
 					return -1;                                                      //DEBUG
 				}                                                                 //DEBUG
+
+        //0 - Last access date
+        file_time_original[0].tv_sec = detalhes.file_time_a.tv_sec;
+        file_time_original[0].tv_nsec = detalhes.file_time_a.tv_nsec;
+        //1 - Last modification date
+        file_time_original[1].tv_sec = detalhes.file_time_m.tv_sec;
+        file_time_original[1].tv_nsec = detalhes.file_time_m.tv_nsec;
+        if(futimens(output, file_time_original) < 0) {
+          perror("futimens");
+          return -1;
+        }
 
 				fprintf(stderr, "TESTING llopen()...\n");
 				if((res = llopen(fd_port, TX)) < 0) {
@@ -100,7 +114,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					sum += properties[2].V[i] * pow(256,3-i);
 				}
 
-				// properties[3].T = 0x03; //Mode - Permissoes
         properties[3].T = 0x03; //Mode - Permissoes
 				properties[3].L = sizeof(detalhes.file_mode);
 				properties[3].V = (unsigned char *) malloc(properties[3].L);
@@ -111,9 +124,37 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					sum += properties[3].V[i] * pow(256,3-i);
 				}
 
-				// properties[4].T = 0x04; //Data de modificacao
-				// properties[4].L = ;
-				// properties[4].V = ;
+        properties[4].T = 0x04; //Data de ultimo acesso
+        properties[4].L = sizeof(detalhes.file_time_a.tv_sec) + sizeof(detalhes.file_time_a.tv_nsec);
+        properties[4].V = (unsigned char *) malloc(properties[4].L);
+        sum_long = 0;
+        for(i = 0; i < sizeof(detalhes.file_time_a.tv_sec); i++) {
+          res_long = (detalhes.file_time_a.tv_sec - sum_long) % (long)pow(256,sizeof(detalhes.file_time_a.tv_sec)-1-i);
+          properties[4].V[i] = (detalhes.file_time_a.tv_sec - res_long) / pow(256,sizeof(detalhes.file_time_a.tv_sec)-1-i) - sum_long;
+          sum_long += properties[4].V[i] * pow(256,sizeof(detalhes.file_time_a.tv_sec)-1-i);
+        }
+        sum_long = 0;
+        for(i = sizeof(detalhes.file_time_a.tv_sec); i < properties[4].L; i++) {
+          res_long = (detalhes.file_time_a.tv_nsec - sum_long) % (long)pow(256,properties[4].L-1-i);
+          properties[4].V[i] = (detalhes.file_time_a.tv_nsec - res_long) / pow(256,properties[4].L-1-i) - sum_long;
+          sum_long += properties[4].V[i] * pow(256,properties[4].L-1-i);
+        }
+
+        properties[5].T = 0x05; //Data de modificacao
+        properties[5].L = sizeof(detalhes.file_time_m.tv_sec) + sizeof(detalhes.file_time_m.tv_nsec);
+        properties[5].V = (unsigned char *) malloc(properties[5].L);
+        sum_long = 0;
+        for(i = 0; i < sizeof(detalhes.file_time_m.tv_sec); i++) {
+          res_long = (detalhes.file_time_m.tv_sec - sum_long) % (long)pow(256,sizeof(detalhes.file_time_m.tv_sec)-1-i);
+          properties[5].V[i] = (detalhes.file_time_m.tv_sec - res_long) / pow(256,sizeof(detalhes.file_time_m.tv_sec)-1-i) - sum_long;
+          sum_long += properties[5].V[i] * pow(256,sizeof(detalhes.file_time_m.tv_sec)-1-i);
+        }
+        sum_long = 0;
+        for(i = sizeof(detalhes.file_time_m.tv_sec); i < properties[5].L; i++) {
+          res_long = (detalhes.file_time_m.tv_nsec - sum_long) % (long)pow(256,properties[5].L-1-i);
+          properties[5].V[i] = (detalhes.file_time_m.tv_nsec - res_long) / pow(256,properties[5].L-1-i) - sum_long;
+          sum_long += properties[5].V[i] * pow(256,properties[5].L-1-i);
+        }
 
 				// fprintf(stderr, "\n\nSending start package...\n");  //DEBUG
 
@@ -237,6 +278,7 @@ int receiver(int fd_port) {
 	tlv properties_start[NUM_TLV], properties_end[NUM_TLV];
 	data packet_data;
 	details start, end;
+  struct timespec file_time_obtido[2];
 
 	fprintf(stderr, "TESTING llopen()...\n");
 	if((res = llopen(fd_port, RX)) < 0) {
@@ -276,13 +318,13 @@ int receiver(int fd_port) {
 																			pow(256,2) * (int)(properties_start[i].V[1]) +
 																			pow(256,1) * (int)(properties_start[i].V[2]) +
 																			pow(256,0) * (int)(properties_start[i].V[3]);
-									fprintf(stderr, "\nstart.file_length = %d\n", start.file_length);
+									fprintf(stderr, "\nstart.file_length: %d bytes\n", start.file_length);
 									break;
 
 								case 0x01: //Nome
 									start.file_name = (unsigned char *) malloc((int)properties_start[i].L);
 									strcpy((char *) start.file_name, (char *)properties_start[i].V);
-									fprintf(stderr, "start.file_name = %s\n", start.file_name);
+									fprintf(stderr, "start.file_name: %s\n", start.file_name);
 									break;
 
 								case 0x02: //Flags
@@ -290,14 +332,14 @@ int receiver(int fd_port) {
 																	 	 pow(256,2) * (int)(properties_start[i].V[1]) +
 																	 	 pow(256,1) * (int)(properties_start[i].V[2]) +
 																	 	 pow(256,0) * (int)(properties_start[i].V[3]);
-									fprintf(stderr, "start_file_flags = %d\n", start.file_flags);
+									fprintf(stderr, "start.file_flags: %d\n", start.file_flags);
 									break;
 
                 case 0x03: //Mode - Permissoes
                   start.file_mode = pow(256,3) * (int)(properties_start[i].V[0]) +
-                                      pow(256,2) * (int)(properties_start[i].V[1]) +
-                                      pow(256,1) * (int)(properties_start[i].V[2]) +
-                                      pow(256,0) * (int)(properties_start[i].V[3]);
+                                    pow(256,2) * (int)(properties_start[i].V[1]) +
+                                    pow(256,1) * (int)(properties_start[i].V[2]) +
+                                    pow(256,0) * (int)(properties_start[i].V[3]);
                   fprintf(stderr, "start.file_mode: ");
                   fprintf(stderr, (S_ISDIR(start.file_mode)) ? "d" : "-");
                   fprintf(stderr, (start.file_mode & S_IRUSR) ? "r" : "-");
@@ -310,6 +352,24 @@ int receiver(int fd_port) {
                   fprintf(stderr, (start.file_mode & S_IWOTH) ? "w" : "-");
                   fprintf(stderr, (start.file_mode & S_IXOTH) ? "x" : "-");
                   fprintf(stderr,"\n\n");
+                  break;
+
+                case 0x04: //Time - Last access date
+                  start.file_time_a.tv_sec = 0;
+                  start.file_time_a.tv_nsec = 0;
+                  for(i = 0; i < 8; i++) {
+                    start.file_time_a.tv_sec += pow(256,7-i) * (long)properties_start[i].V[i];
+                    start.file_time_a.tv_nsec += pow(256,7-i) * (long)properties_start[i].V[i+8];
+                  }
+                  break;
+
+                case 0x05: //Time - Last Modification date
+                  start.file_time_m.tv_sec = 0;
+                  start.file_time_m.tv_nsec = 0;
+                  for(i = 0; i < 8; i++) {
+                    start.file_time_m.tv_sec += pow(256,7-i) * (long)properties_start[i].V[i];
+                    start.file_time_m.tv_nsec += pow(256,7-i) * (long)properties_start[i].V[i+8];
+                  }
                   break;
 
 								default:
@@ -334,6 +394,16 @@ int receiver(int fd_port) {
 					perror("open");
 					return -1;
 				}
+        //0 - Last access date
+        file_time_obtido[0].tv_sec = start.file_time_a.tv_sec;
+        file_time_obtido[0].tv_nsec = start.file_time_a.tv_nsec;
+        //1 - Last modification date
+        file_time_obtido[1].tv_sec = start.file_time_m.tv_sec;
+        file_time_obtido[1].tv_nsec = start.file_time_m.tv_nsec;
+        if(futimens(output, file_time_obtido) < 0) {
+          perror("futimens");
+          return -1;
+        }
 				break;
 
 			case 1: //data package
@@ -420,13 +490,13 @@ int receiver(int fd_port) {
 																	pow(256,2) * (int)(properties_end[i].V[1]) +
 																	pow(256,1) * (int)(properties_end[i].V[2]) +
 																	pow(256,0) * (int)(properties_end[i].V[3]);
-								fprintf(stderr, "\n\nend.file_length = %d\n", end.file_length);
+								fprintf(stderr, "\n\nend.file_length: %d\n", end.file_length);
 								break;
 
 							case 0x01: //Nome
 								end.file_name = (unsigned char *) malloc((int)properties_end[i].L);
 								strcpy((char *) end.file_name, (char *)properties_end[i].V);
-								fprintf(stderr, "end.file_name = %s\n", end.file_name);
+								fprintf(stderr, "end.file_name: %s\n", end.file_name);
 								break;
 
 							case 0x02: //Flags
@@ -434,14 +504,14 @@ int receiver(int fd_port) {
 																 pow(256,2) * (int)(properties_end[i].V[1]) +
 																 pow(256,1) * (int)(properties_end[i].V[2]) +
 																 pow(256,0) * (int)(properties_end[i].V[3]);
-								fprintf(stderr, "end_file_flags = %d\n", end.file_flags);
+								fprintf(stderr, "end.file_flags: %d\n", end.file_flags);
 								break;
 
               case 0x03: //Mode - Permissoes
-                end.file_mode = pow(256,3) * (int)(properties_start[i].V[0]) +
-                                  pow(256,2) * (int)(properties_start[i].V[1]) +
-                                  pow(256,1) * (int)(properties_start[i].V[2]) +
-                                  pow(256,0) * (int)(properties_start[i].V[3]);
+                end.file_mode = pow(256,3) * (int)(properties_end[i].V[0]) +
+                                  pow(256,2) * (int)(properties_end[i].V[1]) +
+                                  pow(256,1) * (int)(properties_end[i].V[2]) +
+                                  pow(256,0) * (int)(properties_end[i].V[3]);
                 fprintf(stderr, "end.file_mode: ");
                 fprintf(stderr, (S_ISDIR(end.file_mode)) ? "d" : "-");
                 fprintf(stderr, (end.file_mode & S_IRUSR) ? "r" : "-");
@@ -453,12 +523,29 @@ int receiver(int fd_port) {
                 fprintf(stderr, (end.file_mode & S_IROTH) ? "r" : "-");
                 fprintf(stderr, (end.file_mode & S_IWOTH) ? "w" : "-");
                 fprintf(stderr, (end.file_mode & S_IXOTH) ? "x" : "-");
-                fprintf(stderr, "\n\n");
+                fprintf(stderr, "\n");
                 break;
-							//
-							// case 0x04: //Data de modificacao
-							//
-							// 	break;
+
+              case 0x04: //Time - Last access date
+                end.file_time_a.tv_sec = 0;
+                end.file_time_a.tv_nsec = 0;
+                for(i = 0; i < 8; i++) {
+                  end.file_time_a.tv_sec += pow(256,7-i) * (long)properties_end[i].V[i];
+                  end.file_time_a.tv_nsec += pow(256,7-i) * (long)properties_end[i].V[i+8];
+                }
+                break;
+
+              case 0x05: //Time - Last Modification date
+                end.file_time_m.tv_sec = 0;
+                end.file_time_m.tv_nsec = 0;
+                for(i = 0; i < 8; i++) {
+                  end.file_time_m.tv_sec += pow(256,7-i) * (long)properties_end[i].V[i];
+                  end.file_time_m.tv_nsec += pow(256,7-i) * (long)properties_end[i].V[i+8];
+                }
+                break;
+
+							default:
+                break;
 						}
 					}
 					change = 0;

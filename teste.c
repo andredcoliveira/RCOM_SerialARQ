@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <math.h>
+#include <unistd.h>
 
 
 int main(int argc, char** argv) {
@@ -44,6 +45,7 @@ int main(int argc, char** argv) {
     res = (file_time_original[0].tv_sec - sum) % (long)pow(256,sizeof(file_time_original[0].tv_sec)-1-i);
     V0[i] = (file_time_original[0].tv_sec - res) / pow(256,sizeof(file_time_original[0].tv_sec)-1-i) - sum;
     sum += V0[i] * pow(256,sizeof(file_time_original[0].tv_sec)-1-i);
+    // fprintf(stderr, "\nres: %ld\tV0[%d]: %x\tsum: %ld", res, i, V0[i], sum); //DEBUG
   }
   sum = 0;
   for(i = sizeof(file_time_original[0].tv_sec); i < L0; i++) {
@@ -76,8 +78,16 @@ int main(int argc, char** argv) {
   for(i = 0; i < 8; i++) {
     file_time_obtido[0].tv_sec += pow(256,7-i) * (long)V0[i];
     file_time_obtido[0].tv_nsec += pow(256,7-i) * (long)V0[i+8];
+    fprintf(stderr, "\n\n%d: pow(256,7-%d): %ld\t(long)V0[%d]: %x\t(long)V0[%d+8]: %x",
+            i, i, (long)pow(256,7-i), i, V0[i], i, V0[i+8]); //DEBUG
     file_time_obtido[1].tv_sec += pow(256,7-i) * (long)V1[i];
     file_time_obtido[1].tv_nsec += pow(256,7-i) * (long)V1[i+8];
+    fprintf(stderr, "\n%d: pow(256,7-%d): %ld\t(long)V1[%d]: %x\t(long)V1[%d+8]: %x",
+            i, i, (long)pow(256,7-i), i, V1[i], i, V1[i+8]); //DEBUG
+    fprintf(stderr, "\n\n%d: file_time_obtido[0].tv_sec: %ld", i, file_time_obtido[0].tv_sec);  //DEBUG
+    fprintf(stderr, "\n%d: file_time_obtido[0].tv_nsec: %ld", i, file_time_obtido[0].tv_nsec);  //DEBUG
+    fprintf(stderr, "\n%d: file_time_obtido[1].tv_sec: %ld", i, file_time_obtido[1].tv_sec);  //DEBUG
+    fprintf(stderr, "\n%d: file_time_obtido[1].tv_nsec: %ld", i, file_time_obtido[1].tv_nsec);  //DEBUG
   }
 
 
@@ -90,6 +100,14 @@ int main(int argc, char** argv) {
     perror("futimens");
     exit(-1);
   }
+  /*** DEBUG INIT ***/
+  fprintf(stderr, "\n\ndetalhes.file_time_a.tv_sec: %ld", file_time_obtido[0].tv_sec);
+  fprintf(stderr, "\ndetalhes.file_time_a.tv_nsec: %ld", file_time_obtido[0].tv_nsec);
+  fprintf(stderr, "\ndetalhes.file_time_m.tv_sec: %ld", file_time_obtido[1].tv_sec);
+  fprintf(stderr, "\ndetalhes.file_time_m.tv_nsec: %ld\n", file_time_obtido[1].tv_nsec);
+  /*** DEBUG FINIT ***/
+
+  close(fdteste);
 
   return 0;
 

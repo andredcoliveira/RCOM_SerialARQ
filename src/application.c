@@ -63,16 +63,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					return -1;                                                      //DEBUG
 				}                                                                 //DEBUG
 
-        //0 - Last access date
-        file_time_original[0].tv_sec = detalhes.file_time_a.tv_sec;
-        file_time_original[0].tv_nsec = detalhes.file_time_a.tv_nsec;
-        //1 - Last modification date
-        file_time_original[1].tv_sec = detalhes.file_time_m.tv_sec;
-        file_time_original[1].tv_nsec = detalhes.file_time_m.tv_nsec;
-        if(futimens(output, file_time_original) < 0) {
-          perror("futimens");
-          return -1;
-        }
 
 				fprintf(stderr, "TESTING llopen()...\n");
 				if((res = llopen(fd_port, TX)) < 0) {
@@ -253,7 +243,17 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					fprintf(stderr, "\n\t llclose() success.\n\n");
 				}
 
-				if(!close(source) || !close(output)) {  //DEBUG output local
+        //0 - Last access date
+        file_time_original[0] = detalhes.file_time_a;
+        //1 - Last modification date
+        file_time_original[1] = detalhes.file_time_m;
+
+        if(futimens(output, file_time_original) < 0) {
+          perror("futimens");
+          return -1;
+        }
+
+				if((close(source) < 0) || (close(output) < 0)) {  //DEBUG output local
 					perror("close()");
 					return -1;
 				}
@@ -271,10 +271,10 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
 int receiver(int fd_port) {
 
-	unsigned char buffer[TAM_BUF-6];
+    unsigned char buffer[TAM_BUF-6];
 	unsigned char packet[TAM_BUF-6-1];   //nao contem o campo C
 	// char output_path[100] = DIRECTORY;
-	int output = 0, res = 0, done = 0, state = 0, i = 0, change = 0, count_bytes = 0, seq_N = 255; //valor maximo do N no mod 256
+	int output = 0, res = 0, done = 0, state = 0, i = 0, j = 0, change = 0, count_bytes = 0, seq_N = 255; //valor maximo do N no mod 256
 	tlv properties_start[NUM_TLV], properties_end[NUM_TLV];
 	data packet_data;
 	details start, end;
@@ -357,18 +357,18 @@ int receiver(int fd_port) {
                 case 0x04: //Time - Last access date
                   start.file_time_a.tv_sec = 0;
                   start.file_time_a.tv_nsec = 0;
-                  for(i = 0; i < 8; i++) {
-                    start.file_time_a.tv_sec += pow(256,7-i) * (long)properties_start[i].V[i];
-                    start.file_time_a.tv_nsec += pow(256,7-i) * (long)properties_start[i].V[i+8];
+                  for(j = 0; j < 8; j++) {
+                    start.file_time_a.tv_sec += pow(256,7-j) * (long)properties_start[i].V[j];
+                    start.file_time_a.tv_nsec += pow(256,7-j) * (long)properties_start[i].V[j+8];
                   }
                   break;
 
                 case 0x05: //Time - Last Modification date
                   start.file_time_m.tv_sec = 0;
                   start.file_time_m.tv_nsec = 0;
-                  for(i = 0; i < 8; i++) {
-                    start.file_time_m.tv_sec += pow(256,7-i) * (long)properties_start[i].V[i];
-                    start.file_time_m.tv_nsec += pow(256,7-i) * (long)properties_start[i].V[i+8];
+                  for(j = 0; j < 8; j++) {
+                    start.file_time_m.tv_sec += pow(256,7-j) * (long)properties_start[i].V[j];
+                    start.file_time_m.tv_nsec += pow(256,7-j) * (long)properties_start[i].V[j+8];
                   }
                   break;
 
@@ -395,15 +395,9 @@ int receiver(int fd_port) {
 					return -1;
 				}
         //0 - Last access date
-        file_time_obtido[0].tv_sec = start.file_time_a.tv_sec;
-        file_time_obtido[0].tv_nsec = start.file_time_a.tv_nsec;
+        file_time_obtido[0] = start.file_time_a;
         //1 - Last modification date
-        file_time_obtido[1].tv_sec = start.file_time_m.tv_sec;
-        file_time_obtido[1].tv_nsec = start.file_time_m.tv_nsec;
-        if(futimens(output, file_time_obtido) < 0) {
-          perror("futimens");
-          return -1;
-        }
+        file_time_obtido[1] = start.file_time_m;
 				break;
 
 			case 1: //data package
@@ -413,8 +407,8 @@ int receiver(int fd_port) {
 						done = 1;
 						break;
 					} else if (res == DUPLICATE) {
-                        break; //se receber frame repetida no llread retorna DUPLICATE; ignora a leitura do duplicado; volta a ler a proxima
-                    } else if (res < 0) {
+              break; //se receber frame repetida no llread retorna DUPLICATE; ignora a leitura do duplicado; volta a ler a proxima
+          } else if (res < 0) {
 						perror("llread()");
 						return -1;
 					}
@@ -529,18 +523,18 @@ int receiver(int fd_port) {
               case 0x04: //Time - Last access date
                 end.file_time_a.tv_sec = 0;
                 end.file_time_a.tv_nsec = 0;
-                for(i = 0; i < 8; i++) {
-                  end.file_time_a.tv_sec += pow(256,7-i) * (long)properties_end[i].V[i];
-                  end.file_time_a.tv_nsec += pow(256,7-i) * (long)properties_end[i].V[i+8];
+                for(j = 0; j < 8; j++) {
+                  end.file_time_a.tv_sec += pow(256,7-j) * (long)properties_end[i].V[j];
+                  end.file_time_a.tv_nsec += pow(256,7-j) * (long)properties_end[i].V[j+8];
                 }
                 break;
 
               case 0x05: //Time - Last Modification date
                 end.file_time_m.tv_sec = 0;
                 end.file_time_m.tv_nsec = 0;
-                for(i = 0; i < 8; i++) {
-                  end.file_time_m.tv_sec += pow(256,7-i) * (long)properties_end[i].V[i];
-                  end.file_time_m.tv_nsec += pow(256,7-i) * (long)properties_end[i].V[i+8];
+                for(j = 0; j < 8; j++) {
+                  end.file_time_m.tv_sec += pow(256,7-j) * (long)properties_end[i].V[j];
+                  end.file_time_m.tv_nsec += pow(256,7-j) * (long)properties_end[i].V[j+8];
                 }
                 break;
 
@@ -557,8 +551,19 @@ int receiver(int fd_port) {
 	fprintf(stderr, "\t llread() success: bytes written to output: %d bytes;", count_bytes);
 
 	if (count_bytes != start.file_length && count_bytes != end.file_length) {
-		fprintf(stderr, "ERRO: The size of the file in START_PACKAGE (%d) and in END_PACKAGE (%d) is different\n\n", start.file_length, end.file_length);
+		fprintf(stderr, "ERROR: The size of the file in START_PACKAGE (%d) and in END_PACKAGE (%d) is different\n\n", start.file_length, end.file_length);
 	}
+
+  if((end.file_time_a.tv_sec != file_time_obtido[0].tv_sec)
+      || (end.file_time_a.tv_nsec != file_time_obtido[0].tv_nsec)
+      || (end.file_time_m.tv_sec != file_time_obtido[1].tv_sec)
+      || (end.file_time_m.tv_nsec != file_time_obtido[1].tv_nsec)) {
+    fprintf(stderr, "ERROR: Dates in initial package don't match the ones in end package\n\n");
+  }
+  if(futimens(output, file_time_obtido) < 0) {
+    perror("futimens");
+    return -1;
+  }
 
 	fprintf(stderr, "\n\n TESTING llclose()...\n");
 
@@ -570,7 +575,7 @@ int receiver(int fd_port) {
 		fprintf(stderr, "\n\t llclose() success.\n\n");
 	}
 
-	if(!close(output)) {
+	if(close(output) < 0) {
 		perror("close()");
 		return -1;
 	}

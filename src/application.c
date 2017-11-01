@@ -294,7 +294,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					fprintf(stderr, "\n\t llclose() success.\n\n");
 				}
 
-        seconds = total_nanos_elapsed_inDataLink % 1000000000L;  //CLOCKING
+        seconds = total_nanos_elapsed_inDataLink - total_nanos_elapsed_inDataLink % 1000000000L;  //CLOCKING
 
         fprintf(stderr, "\tTime spent in Data-Link Layer: %" PRId64 ".%" PRId64 "\n", seconds, total_nanos_elapsed_inDataLink-(seconds*1000000000L)); //CLOCKING
 
@@ -680,7 +680,7 @@ int receiver(int fd_port) {
 		fprintf(stderr, "\n\t llclose() success.\n\n");
 	}
 
-  seconds = total_nanos_elapsed_inDataLink % 1000000000L;  //CLOCKING
+  seconds = total_nanos_elapsed_inDataLink - total_nanos_elapsed_inDataLink % 1000000000L;  //CLOCKING
 
   fprintf(stderr, "\tTime spent in Data-Link Layer: %" PRId64 ".%" PRId64 "\n", seconds, total_nanos_elapsed_inDataLink-(seconds*1000000000L)); //CLOCKING
 

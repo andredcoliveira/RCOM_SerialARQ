@@ -31,6 +31,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
   struct timespec file_time_original[2];
   uint64_t total_nanos_elapsed_inDataLink = 0;
   struct timespec starttime, stoptime;
+  struct timespec init_api, finit_api;
 
 	fer_count = 0;
 	count_frames = 0;
@@ -39,6 +40,10 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 	struct stat fileStat;
 	details detalhes;
 
+  if(clock_gettime(CLOCK_MONOTONIC, &init_api) < 0) {  //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
 	while(!done) {
 		switch(state) {
 			case 0:
@@ -293,7 +298,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					fprintf(stderr, "\n\t llclose() success.\n\n");
 				}
 
-        fprintf(stderr, "\tTime spent in Data-Link Layer: %" PRId64 "ns\n", total_nanos_elapsed_inDataLink); //CLOCKING
+        fprintf(stderr, "\tTime spent in Data-Link Layer:  %" PRId64 "ns\n", total_nanos_elapsed_inDataLink); //CLOCKING
 
         //0 - Last access date
         file_time_original[0] = detalhes.file_time_a;
@@ -316,6 +321,13 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				break;
 		}
 	}
+  if(clock_gettime(CLOCK_MONOTONIC, &finit_api) < 0) {   //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
+
+  fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
+  fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
 
 	return 0;
 
@@ -332,6 +344,12 @@ int receiver(int fd_port) {
   struct timespec file_time_obtido[2];
   uint64_t total_nanos_elapsed_inDataLink = 0;
   struct timespec starttime, stoptime;
+  struct timespec init_api, finit_api;
+
+  if(clock_gettime(CLOCK_MONOTONIC, &init_api) < 0) {  //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
 
 	fprintf(stderr, "TESTING llopen()...\n");
 
@@ -676,12 +694,21 @@ int receiver(int fd_port) {
 		fprintf(stderr, "\n\t llclose() success.\n\n");
 	}
 
-  fprintf(stderr, "\tTime spent in Data-Link Layer: %" PRId64 "ns\n", total_nanos_elapsed_inDataLink); //CLOCKING
+  fprintf(stderr, "\tTime spent in Data-Link Layer:  %" PRId64 "ns\n", total_nanos_elapsed_inDataLink); //CLOCKING
 
 	if(close(output) < 0) {
 		perror("close()");
 		return -1;
 	}
+
+  if(clock_gettime(CLOCK_MONOTONIC, &finit_api) < 0) {   //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
+
+  fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
+  fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
+
 	return 0;
 
 } //receiver()

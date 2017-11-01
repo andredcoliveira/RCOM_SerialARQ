@@ -333,6 +333,7 @@ int receiver(int fd_port) {
 	data packet_data;
 	details start, end;
   struct timespec file_time_obtido[2];
+  int seconds = 0;
   uint64_t total_nanos_elapsed_inDataLink = 0;
   struct timespec starttime, stoptime;
 

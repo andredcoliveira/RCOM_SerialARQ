@@ -29,7 +29,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
   long sum_long = 0, res_long = 0;
 	float divi = 0;
   struct timespec file_time_original[2];
-  int seconds = 0;
+  uint64_t seconds = 0;
   uint64_t total_nanos_elapsed_inDataLink = 0;
   struct timespec starttime, stoptime;
 
@@ -296,7 +296,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
         seconds = total_nanos_elapsed_inDataLink % 1000000000L;  //CLOCKING
 
-        fprintf(stderr, "\tTime spent in Data-Link Layer: %d.%" PRId64 "\n", seconds, total_nanos_elapsed_inDataLink-(seconds*1000000000L)); //CLOCKING
+        fprintf(stderr, "\tTime spent in Data-Link Layer: %" PRId64 ".%" PRId64 "\n", seconds, total_nanos_elapsed_inDataLink-(seconds*1000000000L)); //CLOCKING
 
         //0 - Last access date
         file_time_original[0] = detalhes.file_time_a;
@@ -333,7 +333,7 @@ int receiver(int fd_port) {
 	data packet_data;
 	details start, end;
   struct timespec file_time_obtido[2];
-  int seconds = 0;
+  uint64_t seconds = 0;
   uint64_t total_nanos_elapsed_inDataLink = 0;
   struct timespec starttime, stoptime;
 
@@ -682,7 +682,7 @@ int receiver(int fd_port) {
 
   seconds = total_nanos_elapsed_inDataLink % 1000000000L;  //CLOCKING
 
-  fprintf(stderr, "\tTime spent in Data-Link Layer: %d.%" PRId64 "\n", seconds, total_nanos_elapsed_inDataLink-(seconds*1000000000L)); //CLOCKING
+  fprintf(stderr, "\tTime spent in Data-Link Layer: %" PRId64 ".%" PRId64 "\n", seconds, total_nanos_elapsed_inDataLink-(seconds*1000000000L)); //CLOCKING
 
 	if(close(output) < 0) {
 		perror("close()");

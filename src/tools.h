@@ -1,6 +1,8 @@
 #ifndef _TOOLS_
 #define _TOOLS_
 
+#include <inttypes.h>
+
 #define BAUDRATE B115200  //38400
 #define MODEMDEVICE "/dev/ttyS0"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -73,6 +75,8 @@ int fer_count;        //counts REJs
 int count_frames;      //counts frames sent
 int flag_alarm;
 int timer_seconds;
+
+uint64_t nanos(struct timespec* ts);
 
 void alarmHandler();
 void randomError (unsigned char *buffer, int buffer_size);

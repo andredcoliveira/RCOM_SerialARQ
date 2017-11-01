@@ -1,5 +1,4 @@
 /** APPLICATION LAYER **/
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -13,10 +12,10 @@
 #include <math.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "tools.h"
 #include "datalink.h"
-
 
 int transmitter(int fd_port, char *source_path, char *local_dest);
 int receiver(int fd_port);
@@ -30,6 +29,8 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
   long sum_long = 0, res_long = 0;
 	float divi = 0;
   struct timespec file_time_original[2];
+  uint64_t total_nanos_elapsed_inDataLink = 0;
+  struct timespec starttime, stoptime;
 
 	fer_count = 0;
 	count_frames = 0;
@@ -65,7 +66,17 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
 
 				fprintf(stderr, "TESTING llopen()...\n");
-				if((res = llopen(fd_port, TX)) < 0) {
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        res = llopen(fd_port, TX);
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+				if(res < 0) {
 					perror("llopen()");
 					return -1;
 				}
@@ -154,7 +165,17 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					return -1;
 				}
 
-				if((res = llwrite(fd_port, package, res)) < 0) {
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        res = llwrite(fd_port, package, res);
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+				if(res < 0) {
 					perror("llwrite");
 					return -1;
 				}
@@ -183,7 +204,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 						return -1;
 					}
 
-					if((res = write(output, buffer, res-4)) < 0) { //review
+					if((res = write(output, buffer, res-4)) < 0) {
 						perror("write(output)");
 						return -1;
 					}
@@ -192,14 +213,22 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
 					// fprintf(stderr, "\n\nSending data...\n");  //DEBUG
 
-					if((res = llwrite(fd_port, package, ler+4)) < 0) {
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          res = llwrite(fd_port, package, ler+4);
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+					if(res < 0) {
 						perror("llwrite()");
 						return -1;
 					} else {
 						count_bytes += res;
 					}
-
-					// fprintf(stderr, "\n");
 
 					for(clr = 0; clr < TAM_BUF-6; clr++) {
 						buffer[clr] = 0;
@@ -218,7 +247,18 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				}
 
 				// fprintf(stderr, "\n\nSending end package...\n");  //DEBUG
-				if((res = llwrite(fd_port, package, res)) < 0) {
+
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        res = llwrite(fd_port, package, res);
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+				if(res < 0) {
 					perror("llwrite");
 					return -1;
 				}
@@ -235,13 +275,26 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
 				fprintf(stderr, "\n\n TESTING llclose()...\n");
 
-				if((res = llclose(fd_port, TX)) < 0) {
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        res = llclose(fd_port, TX);
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          perror("clock_gettime()");                          //CLOCKING
+          return -1;                                          //CLOCKING
+        }                                                     //CLOCKING
+        total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+				if(res < 0) {
 					perror("llclose()");
 					return -1;
 				}
 				if(res == 0) {
 					fprintf(stderr, "\n\t llclose() success.\n\n");
 				}
+
+
+        fprintf(stderr, "\tnanoseconds passed: %" PRId64 "\n", total_nanos_elapsed_inDataLink); //CLOCKING
 
         //0 - Last access date
         file_time_original[0] = detalhes.file_time_a;
@@ -271,17 +324,29 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
 int receiver(int fd_port) {
 
-    unsigned char buffer[TAM_BUF-6];
+  unsigned char buffer[TAM_BUF-6];
 	unsigned char packet[TAM_BUF-6-1];   //nao contem o campo C
-	// char output_path[100] = DIRECTORY;
 	int output = 0, res = 0, done = 0, state = 0, i = 0, j = 0, change = 0, count_bytes = 0, seq_N = 255; //valor maximo do N no mod 256
 	tlv properties_start[NUM_TLV], properties_end[NUM_TLV];
 	data packet_data;
 	details start, end;
   struct timespec file_time_obtido[2];
+  uint64_t total_nanos_elapsed_inDataLink = 0;
+  struct timespec starttime, stoptime;
 
 	fprintf(stderr, "TESTING llopen()...\n");
-	if((res = llopen(fd_port, RX)) < 0) {
+
+  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
+  res = llopen(fd_port, RX);
+  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
+  total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+	if(res < 0) {
 		perror("llopen()");
 		return -1;
 	}
@@ -293,7 +358,16 @@ int receiver(int fd_port) {
 		switch (state) {
 			case 0: //start package
 				if (!change) {
-					res = llread(fd_port, buffer);
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          res = llread(fd_port, buffer);
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
 					if (res == CALL_CLOSE) { //Leu o DISC - Fim da leitura
 						done = 1;
 						break;
@@ -402,7 +476,16 @@ int receiver(int fd_port) {
 
 			case 1: //data package
 				if (!change) {
-					res = llread(fd_port, buffer);
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          res = llread(fd_port, buffer);
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
 					if (res == CALL_CLOSE) { //Leu o DISC - Fim da leitura
 						done = 1;
 						break;
@@ -458,7 +541,16 @@ int receiver(int fd_port) {
 
 			case 2: //end package
 				if (!change) {
-					res = llread(fd_port, buffer);
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          res = llread(fd_port, buffer);
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+            perror("clock_gettime()");                          //CLOCKING
+            return -1;                                          //CLOCKING
+          }                                                     //CLOCKING
+          total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
 					if (res == CALL_CLOSE) { //Leu o DISC - Fim da leitura
 						done = 1;
 						break;
@@ -548,17 +640,17 @@ int receiver(int fd_port) {
 		}
 	}
 
-	fprintf(stderr, "\t llread() success: bytes written to output: %d bytes;", count_bytes);
+	fprintf(stderr, "\n\n\t llread() success: bytes written to output: %d bytes;", count_bytes);
 
 	if (count_bytes != start.file_length && count_bytes != end.file_length) {
-		fprintf(stderr, "ERROR: The size of the file in START_PACKAGE (%d) and in END_PACKAGE (%d) is different\n\n", start.file_length, end.file_length);
+		fprintf(stderr, "\n\nERROR: The size of the file in START_PACKAGE (%d) and in END_PACKAGE (%d) is different\n\n", start.file_length, end.file_length);
 	}
 
   if((end.file_time_a.tv_sec != file_time_obtido[0].tv_sec)
       || (end.file_time_a.tv_nsec != file_time_obtido[0].tv_nsec)
       || (end.file_time_m.tv_sec != file_time_obtido[1].tv_sec)
       || (end.file_time_m.tv_nsec != file_time_obtido[1].tv_nsec)) {
-    fprintf(stderr, "ERROR: Dates in initial package don't match the ones in end package\n\n");
+    fprintf(stderr, "\n\nERROR: Dates in initial package don't match the ones in end package\n\n");
   }
   if(futimens(output, file_time_obtido) < 0) {
     perror("futimens");
@@ -567,13 +659,25 @@ int receiver(int fd_port) {
 
 	fprintf(stderr, "\n\n TESTING llclose()...\n");
 
-	if((res = llclose(fd_port, RX)) < 0) {
+  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
+  res = llclose(fd_port, RX);
+  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+    perror("clock_gettime()");                          //CLOCKING
+    return -1;                                          //CLOCKING
+  }                                                     //CLOCKING
+  total_nanos_elapsed_inDataLink += nanos(&stoptime) - nanos(&starttime);  //CLOCKING
+	if(res < 0) {
 		perror("llclose()");
 		return -1;
 	}
 	if(res == 0) {
 		fprintf(stderr, "\n\t llclose() success.\n\n");
 	}
+
+  fprintf(stderr, "\tnanoseconds passed: %" PRId64 "\n", total_nanos_elapsed_inDataLink); //CLOCKING
 
 	if(close(output) < 0) {
 		perror("close()");
@@ -599,9 +703,8 @@ int main(int argc, char** argv) {
 		exit(-1);
 	}
 
-	signal(SIGALRM, alarmHandler);
+	// signal(SIGALRM, alarmHandler);  //vestigial
 
-	/*CHAMAR LLOPEN() */
 	fprintf(stderr, "SHALL WE BEGIN?... RX / TX?\n\n");
 	if(fgets(buf, sizeof(buf), stdin) == 0){
 		perror("fgets");

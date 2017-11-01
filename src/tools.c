@@ -12,8 +12,15 @@
 #include <math.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "tools.h"
+
+uint64_t nanos(struct timespec* ts) {
+
+    return ts->tv_sec * (uint64_t)1000000000L + ts->tv_nsec;
+
+}
 
 void alarmHandler() {
 

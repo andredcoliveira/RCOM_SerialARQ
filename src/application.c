@@ -40,7 +40,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 	struct stat fileStat;
 	details detalhes;
 
-  if(clock_gettime(CLOCK_MONOTONIC, &init_api) < 0) {  //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &init_api) < 0) {   //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
@@ -736,12 +736,12 @@ int main(int argc, char** argv) {
 		perror("fgets");
 		exit(-1);
 	}
-	if(strncmp(buf, "TX", 2) == 0){
+	if((strncmp(buf, "TX", 2) == 0) || (strncmp(buf, "tx", 2) == 0)){
 		if(transmitter(fd_port, argv[2], argv[3]) < 0) {
 			perror("transmitter()");
 			exit(-1);
 		}
-	} else if(strncmp(buf, "RX", 2) == 0) {
+	} else if((strncmp(buf, "RX", 2) == 0) || (strncmp(buf, "rx", 2) == 0)) {
 		if(receiver(fd_port) < 0) {
 			perror("receiver()");
 			exit(-1);

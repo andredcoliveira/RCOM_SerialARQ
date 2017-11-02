@@ -409,7 +409,6 @@ int llwrite(int port, unsigned char* buffer, int length) {
 					fer_count++;
 					bad = 0;
 					state = 0;
-					fprintf(stderr, "\n\ngot REJ");
 				} else {   //what is this, a frame for ants?
 					bad++;
 					state = 0;

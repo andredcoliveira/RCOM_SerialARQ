@@ -21,7 +21,8 @@ int sendNumber = 0;     //Numero da trama a escrever
 //cool function to read stuff from port
 int getFrame(int port, unsigned char *frame, int MODE) {
 
-	int done = 0, res = 0, b = 0, countf = 0;
+	int done = 0, res = 0, b = 0;
+	// int countf = 0;
 	unsigned char get;
 
 	if(TAM_BUF <= 65539/2) {
@@ -45,7 +46,7 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
 	// int ciclos = 0;
-	int debug = 0; //debug
+	// int debug = 0; //debug
 
 	while(!done) {
 		/*** get byte ***/
@@ -376,6 +377,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 	while(!done) {
 		switch(state) {
 			case 0: //writes frame on port
+				fprintf(stderr, "\n\nis in state %d\n", state);
 				sent = write(port, frame_sent, frame_len);
 				state = 1;
 				break;
@@ -412,7 +414,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 					fer_count++;
 					bad = 0;
 					state = 0;
-					fprintf(stderr, "\n\ngoing to state 0");
+					fprintf(stderr, "\n\ngot REJ");
 				} else {   //what is this, a frame for ants?
 					bad++;
 					state = 0;

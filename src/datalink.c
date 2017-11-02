@@ -44,7 +44,7 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	tv.tv_usec = 0;  //us
 
 	memset(frame, 0, TAM_FRAME);  //cleans frame before a read
-	fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
+	// fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
 
 	while(!done) {
@@ -202,13 +202,13 @@ int llread(int port, unsigned char *buffer) {
 		switch(state) {
 			case 0:  //reads frame
 				got = getFrame(port, frame_got, RX);
-				/*** DEBUG INIT ***/
-				fprintf(stderr, "\n\nframe_got: |");
-				for(int i = 0; i < got; i++) {
-					fprintf(stderr, "%x|", frame_got[i]);
-				}
-				fprintf(stderr, "\n\n");
-				/*** DEBUG FINIT ***/
+				// /*** DEBUG INIT ***/
+				// fprintf(stderr, "\n\nframe_got: |");
+				// for(int i = 0; i < got; i++) {
+				// 	fprintf(stderr, "%x|", frame_got[i]);
+				// }
+				// fprintf(stderr, "\n\n");
+				// /*** DEBUG FINIT ***/
 				if(got == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) { //daft punk - one more time
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);

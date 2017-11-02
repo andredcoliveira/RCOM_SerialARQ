@@ -24,12 +24,6 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	int done = 0, res = 0, b = 0;
 	unsigned char get;
 
-	// if(TAM_BUF <= 65539/2) {
-	// 	timer_seconds = WAIT_TIME;
-	// } else {
-	// 	timer_seconds = (int) round(WAIT_TIME * (((double) TAM_BUF/65539) + 2));
-	// }
-
 	timer_seconds = WAIT_TIME;
 
 	fd_set readfds;
@@ -93,10 +87,6 @@ int llopen(int port, int MODE) {
   int state = 0, res = 0, done = 0, bad = 0, got = 0;
 	unsigned char SET[5], UA[5];
 	unsigned char frame_got[TAM_FRAME];
-
-	/*** ALTERACAO: alterado de modo a nao precisar de readFrame, senao dava
-	merda, dependia de quem começava
-	OBS: llopen() tá rapido como o caralho mesmo que dê 1+ timeouts ***/
 
 	//SET
 	supervisionFrame(SET, FR_A_TX, FR_C_SET);
@@ -414,9 +404,6 @@ int llclose(int port, int MODE) {
 	int state = 0, res = 0, bad = 0, done = 0, got = 0;
 	unsigned char DISC[5], UA[5];
 	unsigned char frame_got[TAM_FRAME];
-
-	/*** ALTERACAO: mesma história de llopen()
-	NOTA: verificar se valor de res = 5 em cada escrita? ***/
 
 	//DISC
 	supervisionFrame(DISC, FR_A_TX, FR_C_DISC);

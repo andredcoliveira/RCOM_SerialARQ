@@ -44,6 +44,9 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	memset(frame, 0, TAM_FRAME);  //cleans frame before a read
 	fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
+	// int ciclos = 0;
+	int debug = 0; //debug
+
 	while(!done) {
 		/*** get byte ***/
 		res = select(port + 1, &readfds, NULL, NULL, &tv);
@@ -51,30 +54,38 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 			perror("select()"); //some error occured in select
 			return -2;
 		} else if(res == 0) {
-			// memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
-			// tcflush(port, TCIOFLUSH);
+			memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
+			tcflush(port, TCIOFLUSH);
 			return ERR_READ_TIMEOUT;
 		} else if(FD_ISSET(port, &readfds)) {
 			//port has data
 			read(port, &get, 1);
 		}
-		// fprintf(stderr, "\n\nget: %x", get);  //DEBUG
 
 		/*** by this stage function has returned err or get has 1 byte ***/
-		frame[b++] = get;
-		if(frame[b-1] == FR_F) {
-			if(frame[b-2] == FR_F) {  //read 2 flags in a row
-				memset(frame, 0, TAM_FRAME);
-				b = 0;
-				frame[b++] = FR_F;
-				countf = 1;
+		if(get == FR_F) {
+			if(b == 0) {
+				frame[b++] = get;
+				// countf++;
 			} else {
-				countf++;
+				if(frame[b-1] == FR_F) {
+					memset(frame, 0, TAM_FRAME);
+					b = 0;
+					frame[b++] = FR_F;
+					// countf = 1;
+				} else {
+					frame[b++] = get;
+					done = 1;
+				}
+			}
+		} else {
+			if(b > 0) {
+				frame[b++] = get;
 			}
 		}
-		if(countf == 2) {
-			done = 1;
-		}
+		// if(countf == 2) {
+		// 	done = 1;
+		// }
 	}
 
 	return b;  //returns frame length
@@ -194,6 +205,13 @@ int llread(int port, unsigned char *buffer) {
 		switch(state) {
 			case 0:  //reads frame
 				got = getFrame(port, frame_got, RX);
+				/*** DEBUG INIT ***/
+				fprintf(stderr, "\n\nframe_got: |");
+				for(int i = 0; i < got; i++) {
+					fprintf(stderr, "%x|", frame_got[i]);
+				}
+				fprintf(stderr, "\n\n");
+				/*** DEBUG FINIT ***/
 				if(got == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) { //daft punk - one more time
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);

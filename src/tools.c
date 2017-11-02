@@ -32,7 +32,7 @@ void alarmHandler() {
 void randomError (unsigned char *buffer, int buffer_size) {
 
   int indice = 0;
-	struct timeval micros;
+	// struct timeval micros;
 	int err = 0;
 	// gettimeofday(&micros, NULL);
 	// srand(micros.tv_usec);

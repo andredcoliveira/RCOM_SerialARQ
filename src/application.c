@@ -537,9 +537,9 @@ int receiver(int fd_port) {
             o tamanho suportado pelo pacote
             (L2 e L1 - 2 bytes - 65535 bytes de dados) **/
 						if ((res-4) != (256*(int)packet[1] + (int)packet[2])) {
-							fprintf(stderr,"ERRO: Described packet size and actual
-                packet size differ. Writing max data packet size
-                (65535 bytes) from port to output.");
+							fprintf(stderr,"ERRO: Described packet size and actual "
+                                    "packet size differ. Writing max data packet size "
+                                    "(65535 bytes) from port to output.");
 						}
 						dataPackage(packet, &packet_data);
 					} else if (buffer[0] == FR_END) {

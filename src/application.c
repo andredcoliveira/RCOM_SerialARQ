@@ -17,10 +17,10 @@
 #include "tools.h"
 #include "datalink.h"
 
-int transmitter(int fd_port, char *source_path, char *local_dest);
+int transmitter(int fd_port, char *source_path);
 int receiver(int fd_port);
 
-int transmitter(int fd_port, char *source_path, char *local_dest) {
+int transmitter(int fd_port, char *source_path) {
 
   unsigned char buffer[TAM_BUF], package[TAM_BUF];
 	int source, res = 0, count_bytes = 0, count_bytes2 = 0, ler = 0;
@@ -714,7 +714,7 @@ int main(int argc, char** argv) {
 		exit(-1);
 	}
 	if((strncmp(buf, "TX", 2) == 0) || (strncmp(buf, "tx", 2) == 0)){
-		if(transmitter(fd_port, argv[2], argv[3]) < 0) {
+		if(transmitter(fd_port, argv[2]) < 0) {
 			perror("transmitter()");
 			exit(-1);
 		}

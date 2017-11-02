@@ -18,8 +18,7 @@
 #define FER				   	 0			  		//Frame Error Rate em percentagem
 #define NUM_TLV		  	 6
 #define DIRECTORY      "/output/"
-#define WAIT_TIME_RX   3
-#define WAIT_TIME_TX   3
+#define WAIT_TIME			 3
 
 #define FR_F       		0x7E   	//0111 1110
 #define FR_F_AUX 	  	0x5E  	//0111 1101 0101 1110

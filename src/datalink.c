@@ -25,10 +25,10 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	unsigned char get;
 	//NOTA: com esperas iguais perde bastante tempo a sync e pode ate nao resultar
 	//mas com tempos diferentes funciona na perfeicao. Investigar? (Necessary?)
-	if(MODE == TX) {
-		timer_seconds = 3;
+	if(BAUDRATE <= 65356) {
+		timer_seconds = WAIT_TIME;
 	} else {
-		timer_seconds = 3;
+		timer_seconds = WAIT_TIME * (BAUDRATE/65356);
 	}
 
 	fd_set readfds;

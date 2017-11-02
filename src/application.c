@@ -22,7 +22,7 @@ int receiver(int fd_port);
 
 int transmitter(int fd_port, char *source_path, char *local_dest) {
 
-  unsigned char buffer[TAM_BUF-6], package[TAM_BUF-6];
+  unsigned char buffer[TAM_BUF], package[TAM_BUF];
 	int res = 0, count_bytes = 0, count_bytes2 = 0, ler = 0;
 	int source, output, clr = 0, state = 0, done = 0;
 	int seq_num = 0, i = 0, sum = 0;
@@ -191,8 +191,8 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 			case 2: //data packages
 				while(count_bytes2 < detalhes.file_length) {
 
-					if(count_bytes2 + TAM_BUF-6 < detalhes.file_length) {
-						ler = TAM_BUF-6;
+					if(count_bytes2 + TAM_BUF-4 < detalhes.file_length) {
+						ler = TAM_BUF-4;
 						count_bytes2 += ler;
 					} else {
 						ler = detalhes.file_length - count_bytes2;
@@ -208,6 +208,15 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 						perror("buildDataPackage");
 						return -1;
 					}
+
+          // /*** DEBUG INIT ***/
+          // int k = 0;
+          // fprintf(stderr, "\n\nbuffer: ");
+          // for(k = 0; k < res-4; k++) {
+          //   fprintf(stderr, "%c", buffer[k]);
+          // }
+          // fprintf(stderr, "\nsize: %d\n\n", k);
+          // /*** DEBUG FINIT ***/
 
 					if((res = write(output, buffer, res-4)) < 0) {
 						perror("write(output)");
@@ -235,7 +244,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 						count_bytes += res;
 					}
 
-					for(clr = 0; clr < TAM_BUF-6; clr++) {
+					for(clr = 0; clr < TAM_BUF; clr++) {
 						buffer[clr] = 0;
 					}
 					count_frames++;
@@ -329,14 +338,17 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
   fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
   fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
 
+  /*BALTASAR*/
+  fprintf(stderr, "\n\tcount_bits = %d\n", count_bits*8);
+
 	return 0;
 
 } //transmitter()
 
 int receiver(int fd_port) {
 
-  unsigned char buffer[TAM_BUF-6];
-	unsigned char packet[TAM_BUF-6-1];   //nao contem o campo C
+  unsigned char buffer[TAM_BUF];
+	unsigned char packet[TAM_BUF-1];   //nao contem o campo C
 	int output = 0, res = 0, done = 0, state = 0, i = 0, j = 0, change = 0, count_bytes = 0, seq_N = 255; //valor maximo do N no mod 256
 	tlv properties_start[NUM_TLV], properties_end[NUM_TLV];
 	data packet_data;
@@ -521,6 +533,14 @@ int receiver(int fd_port) {
 						packet[i] = buffer[i+1];
 					}
 					if (buffer[0] == FR_MID) {
+            /** Verifica se o tamanho do buffer excede
+            o tamanho suportado pelo pacote
+            (L2 e L1 - 2 bytes - 65535 bytes de dados) **/
+						if ((res-4) != (256*(int)packet[1] + (int)packet[2])) {
+							fprintf(stderr,"ERRO: Described packet size and actual
+                packet size differ. Writing max data packet size
+                (65535 bytes) from port to output.");
+						}
 						dataPackage(packet, &packet_data);
 					} else if (buffer[0] == FR_END) {
 						change = 1;
@@ -546,7 +566,7 @@ int receiver(int fd_port) {
 					count_bytes += res;
 
 					//Cleaning the buffer
-					for (i = 0; i < TAM_BUF-6; i++) {
+					for (i = 0; i < TAM_BUF; i++) {
 						buffer[i] = 0;
 					}
 					change = 0;
@@ -708,6 +728,9 @@ int receiver(int fd_port) {
 
   fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
   fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
+
+  /*BALTASAR*/
+  fprintf(stderr, "\n\tcount_bits = %d\n", count_bits*8);
 
 	return 0;
 

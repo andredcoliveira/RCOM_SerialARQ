@@ -23,12 +23,11 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 
 	int done = 0, res = 0, b = 0, countf = 0;
 	unsigned char get;
-	//NOTA: com esperas iguais perde bastante tempo a sync e pode ate nao resultar
-	//mas com tempos diferentes funciona na perfeicao. Investigar? (Necessary?)
-	if(BAUDRATE <= 65356) {
+
+	if(TAM_BUF <= 65539/2) {
 		timer_seconds = WAIT_TIME;
 	} else {
-		timer_seconds = WAIT_TIME * (BAUDRATE/65356);
+		timer_seconds = (int) round(WAIT_TIME * (((double) TAM_BUF/65539) + 1));
 	}
 
 	fd_set readfds;
@@ -39,10 +38,11 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	//add port to set
 	FD_SET(port, &readfds);
 	//set timeout value
-	tv.tv_sec = timer_seconds; //3s
-	tv.tv_usec = 0;  //0us
+	tv.tv_sec = timer_seconds; //s
+	tv.tv_usec = 0;  //us
 
 	memset(frame, 0, TAM_FRAME);  //cleans frame before a read
+	fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
 	while(!done) {
 		/*** get byte ***/
@@ -58,6 +58,7 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 			//port has data
 			read(port, &get, 1);
 		}
+		// fprintf(stderr, "\n\nget: %x", get);  //DEBUG
 
 		/*** by this stage function has returned err or get has 1 byte ***/
 		frame[b++] = get;
@@ -128,6 +129,7 @@ int llopen(int port, int MODE) {
 							state = 0;
 						}
 					}
+					count_bits+=got;				//BALTASAR
 					break;
 
 				default:
@@ -154,6 +156,7 @@ int llopen(int port, int MODE) {
 							state = 1;
 						}
 					}
+					count_bits+=got;				//BALTASAR
 					break;
 
 				case 1:  //send UA
@@ -203,6 +206,11 @@ int llread(int port, unsigned char *buffer) {
 				} else {
 					state = 1;
 				}
+				/*BALTASAR*/
+				if (frame_got[2] != FR_C_SET && frame_got[2] != FR_C_UA && frame_got[2] != FR_C_DISC) {
+					randomError(frame_got, got);
+				}
+				count_bits+=got;				//BALTASAR
 				break;
 
 			case 1: //check Bcc1 first
@@ -375,6 +383,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 				} else {
 					state = 2;
 				}
+				count_bits+=res;				//BALTASAR
 				break;
 
 			case 2: //checks if RR or REJ
@@ -385,6 +394,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 					fer_count++;
 					bad = 0;
 					state = 0;
+					fprintf(stderr, "\n\ngoing to state 0");
 				} else {   //what is this, a frame for ants?
 					bad++;
 					state = 0;
@@ -447,6 +457,7 @@ int llclose(int port, int MODE) {
 							state = 0;
 						}
 					}
+					count_bits+=got;				//BALTASAR
 					break;
 
 				default:
@@ -486,6 +497,7 @@ int llclose(int port, int MODE) {
 							state = 0;
 						}
 					}
+					count_bits+=got;				//BALTASAR
 					break;
 
 				case 2: //DISC received, send UA

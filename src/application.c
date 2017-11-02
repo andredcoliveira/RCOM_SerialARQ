@@ -23,12 +23,10 @@ int receiver(int fd_port);
 int transmitter(int fd_port, char *source_path, char *local_dest) {
 
   unsigned char buffer[TAM_BUF], package[TAM_BUF];
-	int res = 0, count_bytes = 0, count_bytes2 = 0, ler = 0;
-	int source, output, clr = 0, state = 0, done = 0;
-	int seq_num = 0, i = 0, sum = 0;
+	int source, res = 0, count_bytes = 0, count_bytes2 = 0, ler = 0;
+  int clr = 0, state = 0, done = 0, seq_num = 0, i = 0, sum = 0;
   long sum_long = 0, res_long = 0;
 	float divi = 0;
-  struct timespec file_time_original[2];
   uint64_t total_nanos_elapsed_inDataLink = 0;
   struct timespec starttime, stoptime;
   struct timespec init_api, finit_api;
@@ -63,12 +61,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				detalhes.file_time_m = fileStat.st_mtim;
 
 				source = open(source_path, O_RDONLY);
-
-				if( (output = open(local_dest, detalhes.file_flags, detalhes.file_mode) ) < 0 ) { //DEBUG
-					perror("open");                                                 //DEBUG
-					return -1;                                                      //DEBUG
-				}                                                                 //DEBUG
-
 
 				fprintf(stderr, "TESTING llopen()...\n");
         if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
@@ -162,8 +154,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
           sum_long += properties[5].V[i] * pow(256,properties[5].L-1-i);
         }
 
-				// fprintf(stderr, "\n\nSending start package...\n");  //DEBUG
-
 				res = buildTLVPackage(FR_START, package, properties);
 				if(res < 1){
 					perror("buildTLVPackage");
@@ -209,24 +199,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 						return -1;
 					}
 
-          // /*** DEBUG INIT ***/
-          // int k = 0;
-          // fprintf(stderr, "\n\nbuffer: ");
-          // for(k = 0; k < res-4; k++) {
-          //   fprintf(stderr, "%c", buffer[k]);
-          // }
-          // fprintf(stderr, "\nsize: %d\n\n", k);
-          // /*** DEBUG FINIT ***/
-
-					if((res = write(output, buffer, res-4)) < 0) {
-						perror("write(output)");
-						return -1;
-					}
-
-					// fprintf(stderr, "bytes written to local output: %d\n", res);
-
-					// fprintf(stderr, "\n\nSending data...\n");  //DEBUG
-
           if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
@@ -259,8 +231,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					perror("buildTLVPackage");
 					return -1;
 				}
-
-				// fprintf(stderr, "\n\nSending end package...\n");  //DEBUG
 
         if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
@@ -309,17 +279,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
         fprintf(stderr, "\tTime spent in Data-Link Layer:  %" PRId64 "ns\n", total_nanos_elapsed_inDataLink); //CLOCKING
 
-        //0 - Last access date
-        file_time_original[0] = detalhes.file_time_a;
-        //1 - Last modification date
-        file_time_original[1] = detalhes.file_time_m;
-
-        if(futimens(output, file_time_original) < 0) {
-          perror("futimens");
-          return -1;
-        }
-
-				if((close(source) < 0) || (close(output) < 0)) {  //DEBUG output local
+				if((close(source) < 0)) {
 					perror("close()");
 					return -1;
 				}
@@ -338,7 +298,6 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
   fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
   fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
 
-  /*BALTASAR*/
   fprintf(stderr, "\n\tcount_bits = %d\n", count_bits*8);
 
 	return 0;
@@ -365,12 +324,12 @@ int receiver(int fd_port) {
 
 	fprintf(stderr, "TESTING llopen()...\n");
 
-  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {   //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
   res = llopen(fd_port, RX);
-  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {    //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
@@ -387,12 +346,12 @@ int receiver(int fd_port) {
 		switch (state) {
 			case 0: //start package
 				if (!change) {
-          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
           res = llread(fd_port, buffer);
-          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
@@ -491,8 +450,6 @@ int receiver(int fd_port) {
 					change = 0;
 				}
 
-				//strcat(output_path, (char *)start.file_name); //ANALISAR
-
 				if((output = open((char *)start.file_name, start.file_flags, start.file_mode)) < 0) {
 					perror("open");
 					return -1;
@@ -505,12 +462,12 @@ int receiver(int fd_port) {
 
 			case 1: //data package
 				if (!change) {
-          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
           res = llread(fd_port, buffer);
-          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
@@ -578,12 +535,12 @@ int receiver(int fd_port) {
 
 			case 2: //end package
 				if (!change) {
-          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
           res = llread(fd_port, buffer);
-          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
@@ -729,7 +686,6 @@ int receiver(int fd_port) {
   fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
   fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
 
-  /*BALTASAR*/
   fprintf(stderr, "\n\tcount_bits = %d\n", count_bits*8);
 
 	return 0;
@@ -751,8 +707,6 @@ int main(int argc, char** argv) {
 		perror("setPort()");
 		exit(-1);
 	}
-
-	// signal(SIGALRM, alarmHandler);  //vestigial
 
 	fprintf(stderr, "SHALL WE BEGIN?... RX / TX?\n\n");
 	if(fgets(buf, sizeof(buf), stdin) == 0){

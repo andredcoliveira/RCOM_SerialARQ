@@ -126,7 +126,7 @@ int llopen(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;				//BALTASAR
+					count_bits+=got;
 					break;
 
 				default:
@@ -153,7 +153,7 @@ int llopen(int port, int MODE) {
 							state = 1;
 						}
 					}
-					count_bits+=got;				//BALTASAR
+					count_bits+=got;
 					break;
 
 				case 1:  //send UA
@@ -203,20 +203,18 @@ int llread(int port, unsigned char *buffer) {
 				} else {
 					state = 1;
 				}
-				/*BALTASAR*/
+
 				if (frame_got[2] != FR_C_SET && frame_got[2] != FR_C_UA && frame_got[2] != FR_C_DISC) {
 					randomError(frame_got, got);
 				}
-				count_bits+=got;				//BALTASAR
+				count_bits+=got;
 				break;
 
 			case 1: //check Bcc1 first
-				// if((frame_got[1] != ESC) && (frame_got[2] != ESC) && (frame_got[3] != ESC)) {
-					if(frame_got[3] != (frame_got[1]^frame_got[2])) {  //Bcc1 != A^C
-						state = 6; //REJ
-						break;
-					}
-				// }
+				if(frame_got[3] != (frame_got[1]^frame_got[2])) {  //Bcc1 != A^C
+					state = 6; //REJ
+					break;
+				}
 				state = 2;
 				break;
 
@@ -373,7 +371,7 @@ int llwrite(int port, unsigned char* buffer, int length) {
 				} else {
 					state = 2;
 				}
-				count_bits+=res;				//BALTASAR
+				count_bits+=res;
 				break;
 
 			case 2: //checks if RR or REJ
@@ -443,7 +441,7 @@ int llclose(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;				//BALTASAR
+					count_bits+=got;
 					break;
 
 				default:
@@ -483,7 +481,7 @@ int llclose(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;				//BALTASAR
+					count_bits+=got;
 					break;
 
 				case 2: //DISC received, send UA

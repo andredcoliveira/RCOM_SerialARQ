@@ -373,7 +373,6 @@ int llwrite(int port, unsigned char* buffer, int length) {
 	while(!done) {
 		switch(state) {
 			case 0: //writes frame on port
-				fprintf(stderr, "\n\nis in state %d\n", state);
 				sent = write(port, frame_sent, frame_len);
 				state = 1;
 				break;

@@ -44,7 +44,6 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	tv.tv_usec = 0;  //us
 
 	memset(frame, 0, TAM_FRAME);  //cleans frame before a read
-	// fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
 
 	while(!done) {
@@ -109,7 +108,7 @@ int llopen(int port, int MODE) {
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o SET
-					fprintf(stderr, "\nSending SET...\n");
+					// fprintf(stderr, "\nSending SET...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, SET, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -168,7 +167,7 @@ int llopen(int port, int MODE) {
 					break;
 
 				case 1:  //send UA
-					fprintf(stderr, "\nSending UA...\n");
+					// fprintf(stderr, "\nSending UA...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, UA, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -202,13 +201,6 @@ int llread(int port, unsigned char *buffer) {
 		switch(state) {
 			case 0:  //reads frame
 				got = getFrame(port, frame_got, RX);
-				// /*** DEBUG INIT ***/
-				// fprintf(stderr, "\n\nframe_got: |");
-				// for(int i = 0; i < got; i++) {
-				// 	fprintf(stderr, "%x|", frame_got[i]);
-				// }
-				// fprintf(stderr, "\n\n");
-				// /*** DEBUG FINIT ***/
 				if(got == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) { //daft punk - one more time
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
@@ -379,13 +371,6 @@ int llwrite(int port, unsigned char* buffer, int length) {
 
 			case 1: //listens port for ACK or NACK
 				res = getFrame(port, frame_got, TX);
-				// /*** DEBUG INIT ***/
-				// fprintf(stderr, "\n\nframe_got: |");
-				// for(int i = 0; i < res; i++) {
-				// 	fprintf(stderr, "%x|", frame_got[i]);
-				// }
-				// fprintf(stderr, "\n\n");
-				// /*** DEBUG FINIT ***/
 				if(res == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) {  //let's give another try
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
@@ -443,7 +428,7 @@ int llclose(int port, int MODE) {
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o DISC
-					fprintf(stderr, "\nSending DISC...\n");
+					// fprintf(stderr, "\nSending DISC...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -484,7 +469,7 @@ int llclose(int port, int MODE) {
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o DISC
-					fprintf(stderr, "\nSending DISC...\n");
+					// fprintf(stderr, "\nSending DISC...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -516,7 +501,7 @@ int llclose(int port, int MODE) {
 
 				case 2: //DISC received, send UA
 					tcflush(port, TCIOFLUSH);  //clear port
-					fprintf(stderr, "\nSending UA\n");
+					// fprintf(stderr, "\nSending UA\n");
 					if((res = write(port, UA, 5)) < 0) {  //0 ou 5?
 						perror("write()");
 						return -1;

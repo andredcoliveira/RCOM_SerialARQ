@@ -24,13 +24,18 @@ uint64_t nanos(struct timespec* ts) {
 
 void randomError (unsigned char *buffer, int buffer_size) {
 
-  int indice = 0;
-	int err = 0;
+  int indice = 0, err = 0;
+	struct timeval micros;
 
+	gettimeofday(&micros, NULL);
+	srand(micros.tv_usec);
 	err = rand() % 101; //n de 0 a 100 que corresponde a percentagem de erro
 
 	if (err < FER) {
+		gettimeofday(&micros, NULL);
+		srand(micros.tv_usec);
 		indice = rand() % (buffer_size - 3) + 1;
+
 		buffer[indice] = 0x00;
 	}
 

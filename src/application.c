@@ -160,12 +160,12 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					return -1;
 				}
 
-        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
           return -1;                                          //CLOCKING
         }                                                     //CLOCKING
         res = llwrite(fd_port, package, res);
-        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
           return -1;                                          //CLOCKING
         }                                                     //CLOCKING
@@ -199,12 +199,12 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 						return -1;
 					}
 
-          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
           res = llwrite(fd_port, package, ler+4);
-          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+          if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
             perror("clock_gettime()");                          //CLOCKING
             return -1;                                          //CLOCKING
           }                                                     //CLOCKING
@@ -232,12 +232,12 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 					return -1;
 				}
 
-        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
           return -1;                                          //CLOCKING
         }                                                     //CLOCKING
         res = llwrite(fd_port, package, res);
-        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
           return -1;                                          //CLOCKING
         }                                                     //CLOCKING
@@ -259,12 +259,12 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 
 				fprintf(stderr, "\n\n TESTING llclose()...\n");
 
-        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+        if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
           return -1;                                          //CLOCKING
         }                                                     //CLOCKING
         res = llclose(fd_port, TX);
-        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+        if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
           perror("clock_gettime()");                          //CLOCKING
           return -1;                                          //CLOCKING
         }                                                     //CLOCKING
@@ -290,7 +290,7 @@ int transmitter(int fd_port, char *source_path, char *local_dest) {
 				break;
 		}
 	}
-  if(clock_gettime(CLOCK_MONOTONIC, &finit_api) < 0) {   //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &finit_api) < 0) {  //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
@@ -317,19 +317,19 @@ int receiver(int fd_port) {
   struct timespec starttime, stoptime;
   struct timespec init_api, finit_api;
 
-  if(clock_gettime(CLOCK_MONOTONIC, &init_api) < 0) {  //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &init_api) < 0) {   //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
 
 	fprintf(stderr, "TESTING llopen()...\n");
 
-  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {   //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
   res = llopen(fd_port, RX);
-  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {    //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
@@ -653,12 +653,12 @@ int receiver(int fd_port) {
 
 	fprintf(stderr, "\n\n TESTING llclose()...\n");
 
-  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {      //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &starttime) < 0) {  //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
   res = llclose(fd_port, RX);
-  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {       //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &stoptime) < 0) {   //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING
@@ -678,7 +678,7 @@ int receiver(int fd_port) {
 		return -1;
 	}
 
-  if(clock_gettime(CLOCK_MONOTONIC, &finit_api) < 0) {   //CLOCKING
+  if(clock_gettime(CLOCK_MONOTONIC, &finit_api) < 0) {  //CLOCKING
     perror("clock_gettime()");                          //CLOCKING
     return -1;                                          //CLOCKING
   }                                                     //CLOCKING

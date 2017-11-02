@@ -22,14 +22,15 @@ int sendNumber = 0;     //Numero da trama a escrever
 int getFrame(int port, unsigned char *frame, int MODE) {
 
 	int done = 0, res = 0, b = 0;
-	// int countf = 0;
 	unsigned char get;
 
-	if(TAM_BUF <= 65539/2) {
-		timer_seconds = WAIT_TIME;
-	} else {
-		timer_seconds = (int) round(WAIT_TIME * (((double) TAM_BUF/65539) + 1));
-	}
+	// if(TAM_BUF <= 65539/2) {
+	// 	timer_seconds = WAIT_TIME;
+	// } else {
+	// 	timer_seconds = (int) round(WAIT_TIME * (((double) TAM_BUF/65539) + 2));
+	// }
+
+	timer_seconds = WAIT_TIME;
 
 	fd_set readfds;
 	struct timeval tv;
@@ -45,35 +46,33 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	memset(frame, 0, TAM_FRAME);  //cleans frame before a read
 	fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
-	// int ciclos = 0;
-	// int debug = 0; //debug
 
 	while(!done) {
 		/*** get byte ***/
-		res = select(port + 1, &readfds, NULL, NULL, &tv);
-		if(res == -1) {
-			perror("select()"); //some error occured in select
-			return -2;
-		} else if(res == 0) {
-			memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
-			tcflush(port, TCIOFLUSH);
-			return ERR_READ_TIMEOUT;
-		} else if(FD_ISSET(port, &readfds)) {
-			//port has data
-			read(port, &get, 1);
+		if(read(port, &get, 1) == 0) {
+			res = select(port + 1, &readfds, NULL, NULL, &tv);
+			if(res == -1) {
+				perror("select()"); //some error occured in select
+				return -2;
+			} else if(res == 0) {
+				memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
+				tcflush(port, TCIOFLUSH);
+				return ERR_READ_TIMEOUT;
+			} else if(FD_ISSET(port, &readfds)) {
+				//port has data
+				read(port, &get, 1);
+			}
 		}
 
 		/*** by this stage function has returned err or get has 1 byte ***/
 		if(get == FR_F) {
 			if(b == 0) {
 				frame[b++] = get;
-				// countf++;
 			} else {
 				if(frame[b-1] == FR_F) {
 					memset(frame, 0, TAM_FRAME);
 					b = 0;
 					frame[b++] = FR_F;
-					// countf = 1;
 				} else {
 					frame[b++] = get;
 					done = 1;
@@ -84,9 +83,6 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 				frame[b++] = get;
 			}
 		}
-		// if(countf == 2) {
-		// 	done = 1;
-		// }
 	}
 
 	return b;  //returns frame length

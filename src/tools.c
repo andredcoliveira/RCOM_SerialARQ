@@ -25,19 +25,24 @@ uint64_t nanos(struct timespec* ts) {
 void randomError (unsigned char *buffer, int buffer_size) {
 
   int indice = 0, err = 0;
-	struct timeval micros;
+  struct timeval micros;
 
-	gettimeofday(&micros, NULL);
-	srand(micros.tv_usec);
-	err = rand() % 101; //n de 0 a 100 que corresponde a percentagem de erro
+  gettimeofday(&micros, NULL);
+  srand(micros.tv_usec);
+  err = rand() % 101; //n de 0 a 100 que corresponde a percentagem de erro
 
-	if (err < FER) {
-		gettimeofday(&micros, NULL);
-		srand(micros.tv_usec);
-		indice = rand() % (buffer_size - 3) + 1;
+  if (err < FER) {
+    do {
+      gettimeofday(&micros, NULL);
+      srand(micros.tv_usec);
+      indice = rand() % (buffer_size - 3) + 1;
+    } while(buffer[indice] == 0x7D || buffer[indice] == 0x7E || buffer[indice] == 0x5D || buffer[indice] == 0x5E);
 
-		buffer[indice] = 0x00;
-	}
+    /* NOTA: quando mete um 0x5D a 0x00 não consegue fazer destuff dessa parte mas o Bcc2 calculado *
+     *       fica igual ao Bcc2 recebido na trama na mesma... Não consegui perceber porquê...       */
+
+    buffer[indice] = 0x00;
+  }
 
 } //randomError()
 

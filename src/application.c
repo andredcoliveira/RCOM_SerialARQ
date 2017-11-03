@@ -174,7 +174,7 @@ int transmitter(int fd_port, char *source_path) {
 					perror("llwrite");
 					return -1;
 				}
-				count_frames++;
+				// count_frames++;
 				state = 2;
 				break;
 
@@ -219,7 +219,7 @@ int transmitter(int fd_port, char *source_path) {
 					for(clr = 0; clr < TAM_BUF; clr++) {
 						buffer[clr] = 0;
 					}
-					count_frames++;
+					// count_frames++;
 					progressBar(count_bytes2, detalhes.file_length);
 				}
 				state = 3;
@@ -246,7 +246,7 @@ int transmitter(int fd_port, char *source_path) {
 					perror("llwrite");
 					return -1;
 				}
-				count_frames++;
+				// count_frames++;
 				state = 4;
 				break;
 
@@ -298,7 +298,7 @@ int transmitter(int fd_port, char *source_path) {
   fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
   fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
 
-  fprintf(stderr, "\n\tcount_bits = %d\n", count_bits*8);
+  fprintf(stderr, "\n\tcount_bytes_S = %d\n", count_bytes_S);
 
 	return 0;
 
@@ -686,7 +686,7 @@ int receiver(int fd_port) {
   fprintf(stderr, "\tTime spent (including API): \t%" PRId64 "ns\n", nanos(&finit_api) - nanos(&init_api)); //CLOCKING
   fprintf(stderr, "\tDifference: \t\t\t%" PRId64 "ns\n\n", (nanos(&finit_api) - nanos(&init_api)) - total_nanos_elapsed_inDataLink);  //CLOCKING
 
-  fprintf(stderr, "\n\tcount_bits = %d\n", count_bits*8);
+  fprintf(stderr, "\n\tcount_bytes_S = %d\n", count_bytes_S);
 
 	return 0;
 

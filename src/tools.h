@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 
-#define BAUDRATE B115200  //38400
+#define BAUDRATE B115200
 #define MODEMDEVICE "/dev/ttyS0"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -11,7 +11,7 @@
 #define TX 1
 #define RX 0
 
-#define TAM_BUF       1024         //size of buffer (max is 65539 because of 256*L2 + L1)
+#define TAM_BUF       65539           //size of buffer (min is 128 for safety because of TLVs; max is 65539 because of 256*L2 + L1)
 #define TAM_FRAME 	  TAM_BUF*2+7	  //potential size of frame
 #define DUPLICATE     -2      			//quando recebe uma trama duplicada, descarta
 #define CALL_CLOSE  	-1 						//quando recebe DISC em llread
@@ -73,7 +73,7 @@ typedef struct {
 int fer_count;         //counts REJs
 int count_frames;      //counts frames sent
 int timer_seconds;
-int count_bits;
+int count_bytes_S;
 
 uint64_t nanos(struct timespec* ts);
 

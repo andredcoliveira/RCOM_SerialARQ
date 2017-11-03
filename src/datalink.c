@@ -119,6 +119,7 @@ int llopen(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got; //calc eficiencia
 						if(memcmp(frame_got, UA, 5) == 0) {
 							fprintf(stderr, "\nConnection successfully established.\n");
 							done = 1;
@@ -126,7 +127,6 @@ int llopen(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;
 					break;
 
 				default:
@@ -149,11 +149,11 @@ int llopen(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got; //calc eficiencia
 						if(memcmp(frame_got, SET, 5) == 0) {
 							state = 1;
 						}
 					}
-					count_bits+=got;
 					break;
 
 				case 1:  //send UA
@@ -201,13 +201,13 @@ int llread(int port, unsigned char *buffer) {
 						return -3;
 					}
 				} else {
+					if (frame_got[2] != FR_C_SET && frame_got[2] != FR_C_UA && frame_got[2] != FR_C_DISC) {
+						randomError(frame_got, got);
+					}
+					count_bytes_S+=got; //calc eficiencia
+					count_frames++; //calc eficiencia
 					state = 1;
 				}
-
-				if (frame_got[2] != FR_C_SET && frame_got[2] != FR_C_UA && frame_got[2] != FR_C_DISC) {
-					randomError(frame_got, got);
-				}
-				count_bits+=got;
 				break;
 
 			case 1: //check Bcc1 first
@@ -369,9 +369,10 @@ int llwrite(int port, unsigned char* buffer, int length) {
 						return -1;
 					}
 				} else {
+					count_bytes_S+=res;  //calc eficiencia
+					count_frames++;
 					state = 2;
 				}
-				count_bits+=res;
 				break;
 
 			case 2: //checks if RR or REJ
@@ -434,6 +435,7 @@ int llclose(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got;  //calc eficiencia
 						if(memcmp(frame_got, UA, 5) == 0) {
 							fprintf(stderr, "\nConnection successfully terminated.\n");
 							done = 1;
@@ -441,7 +443,6 @@ int llclose(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;
 					break;
 
 				default:
@@ -475,13 +476,13 @@ int llclose(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got; //calc eficiencia
 						if(memcmp(frame_got, DISC, 5) == 0) {
 							state = 2;
 						} else {
 							state = 0;
 						}
 					}
-					count_bits+=got;
 					break;
 
 				case 2: //DISC received, send UA

@@ -711,20 +711,40 @@ int main(int argc, char** argv) {
 	fprintf(stderr, "SHALL WE BEGIN?... RX / TX?\n\n");
 	if(fgets(buf, sizeof(buf), stdin) == 0){
 		perror("fgets");
+			//set original port configurations
+			if(resetPort(fd_port, &oldtio) < 0) {
+				perror("resetPort()");
+				exit(-1);
+			}
 		exit(-1);
 	}
 	if((strncmp(buf, "TX", 2) == 0) || (strncmp(buf, "tx", 2) == 0)){
 		if(transmitter(fd_port, argv[2]) < 0) {
 			perror("transmitter()");
+				//set original port configurations
+				if(resetPort(fd_port, &oldtio) < 0) {
+					perror("resetPort()");
+					exit(-1);
+				}
 			exit(-1);
 		}
 	} else if((strncmp(buf, "RX", 2) == 0) || (strncmp(buf, "rx", 2) == 0)) {
 		if(receiver(fd_port) < 0) {
 			perror("receiver()");
+				//set original port configurations
+				if(resetPort(fd_port, &oldtio) < 0) {
+					perror("resetPort()");
+					exit(-1);
+				}
 			exit(-1);
 		}
 	} else {
 		perror("Bad input: Use 'RX' or 'TX' as an argument");
+			//set original port configurations
+			if(resetPort(fd_port, &oldtio) < 0) {
+				perror("resetPort()");
+				exit(-1);
+			}
 		exit(-1);
 	}
 

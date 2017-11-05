@@ -24,12 +24,6 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	int done = 0, res = 0, b = 0;
 	unsigned char get;
 
-	// if(TAM_BUF <= 65539/2) {
-	// 	timer_seconds = WAIT_TIME;
-	// } else {
-	// 	timer_seconds = (int) round(WAIT_TIME * (((double) TAM_BUF/65539) + 2));
-	// }
-
 	timer_seconds = WAIT_TIME;
 
 	fd_set readfds;
@@ -44,7 +38,6 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 	tv.tv_usec = 0;  //us
 
 	memset(frame, 0, TAM_FRAME);  //cleans frame before a read
-	// fprintf(stderr, "\n\n\nCall to getFrame");  //DEBUG
 
 
 	while(!done) {
@@ -55,7 +48,7 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 				perror("select()"); //some error occured in select
 				return -2;
 			} else if(res == 0) {
-				memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout. Necessary?
+				memset(frame, 0, TAM_FRAME);  //cleans buffer if timeout
 				tcflush(port, TCIOFLUSH);
 				return ERR_READ_TIMEOUT;
 			} else if(FD_ISSET(port, &readfds)) {
@@ -91,13 +84,9 @@ int getFrame(int port, unsigned char *frame, int MODE) {
 
 int llopen(int port, int MODE) {
 
-  int state = 0, res = 0, done = 0, bad = 0, got = 0;
+	int state = 0, res = 0, done = 0, bad = 0, got = 0;
 	unsigned char SET[5], UA[5];
 	unsigned char frame_got[TAM_FRAME];
-
-	/*** ALTERACAO: alterado de modo a nao precisar de readFrame, senao dava
-	merda, dependia de quem começava
-	OBS: llopen() tá rapido como o caralho mesmo que dê 1+ timeouts ***/
 
 	//SET
 	supervisionFrame(SET, FR_A_TX, FR_C_SET);
@@ -109,7 +98,7 @@ int llopen(int port, int MODE) {
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o SET
-					fprintf(stderr, "\nSending SET...\n");
+					// fprintf(stderr, "\nSending SET...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, SET, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -130,6 +119,7 @@ int llopen(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got; //calc eficiencia
 						if(memcmp(frame_got, UA, 5) == 0) {
 							fprintf(stderr, "\nConnection successfully established.\n");
 							done = 1;
@@ -137,7 +127,6 @@ int llopen(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;				//BALTASAR
 					break;
 
 				default:
@@ -160,15 +149,15 @@ int llopen(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got; //calc eficiencia
 						if(memcmp(frame_got, SET, 5) == 0) {
 							state = 1;
 						}
 					}
-					count_bits+=got;				//BALTASAR
 					break;
 
 				case 1:  //send UA
-					fprintf(stderr, "\nSending UA...\n");
+					// fprintf(stderr, "\nSending UA...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, UA, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -202,13 +191,6 @@ int llread(int port, unsigned char *buffer) {
 		switch(state) {
 			case 0:  //reads frame
 				got = getFrame(port, frame_got, RX);
-				// /*** DEBUG INIT ***/
-				// fprintf(stderr, "\n\nframe_got: |");
-				// for(int i = 0; i < got; i++) {
-				// 	fprintf(stderr, "%x|", frame_got[i]);
-				// }
-				// fprintf(stderr, "\n\n");
-				// /*** DEBUG FINIT ***/
 				if(got == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) { //daft punk - one more time
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
@@ -219,22 +201,20 @@ int llread(int port, unsigned char *buffer) {
 						return -3;
 					}
 				} else {
+					if (frame_got[2] != FR_C_SET && frame_got[2] != FR_C_UA && frame_got[2] != FR_C_DISC) {
+						randomError(frame_got, got);
+					}
+					count_bytes_S+=got; //calc eficiencia
+					count_frames++; //calc eficiencia
 					state = 1;
 				}
-				/*BALTASAR*/
-				if (frame_got[2] != FR_C_SET && frame_got[2] != FR_C_UA && frame_got[2] != FR_C_DISC) {
-					randomError(frame_got, got);
-				}
-				count_bits+=got;				//BALTASAR
 				break;
 
 			case 1: //check Bcc1 first
-				// if((frame_got[1] != ESC) && (frame_got[2] != ESC) && (frame_got[3] != ESC)) {
-					if(frame_got[3] != (frame_got[1]^frame_got[2])) {  //Bcc1 != A^C
-						state = 6; //REJ
-						break;
-					}
-				// }
+				if(frame_got[3] != (frame_got[1]^frame_got[2])) {  //Bcc1 != A^C
+					state = 6; //REJ
+					break;
+				}
 				state = 2;
 				break;
 
@@ -379,13 +359,6 @@ int llwrite(int port, unsigned char* buffer, int length) {
 
 			case 1: //listens port for ACK or NACK
 				res = getFrame(port, frame_got, TX);
-				// /*** DEBUG INIT ***/
-				// fprintf(stderr, "\n\nframe_got: |");
-				// for(int i = 0; i < res; i++) {
-				// 	fprintf(stderr, "%x|", frame_got[i]);
-				// }
-				// fprintf(stderr, "\n\n");
-				// /*** DEBUG FINIT ***/
 				if(res == ERR_READ_TIMEOUT) {
 					if(bad < TRIES) {  //let's give another try
 						fprintf(stderr, "\n\nTime-out: nothing from port after %d seconds...\n\n\n", timer_seconds);
@@ -396,9 +369,10 @@ int llwrite(int port, unsigned char* buffer, int length) {
 						return -1;
 					}
 				} else {
+					count_bytes_S+=res;  //calc eficiencia
+					count_frames++;
 					state = 2;
 				}
-				count_bits+=res;				//BALTASAR
 				break;
 
 			case 2: //checks if RR or REJ
@@ -430,9 +404,6 @@ int llclose(int port, int MODE) {
 	unsigned char DISC[5], UA[5];
 	unsigned char frame_got[TAM_FRAME];
 
-	/*** ALTERACAO: mesma história de llopen()
-	NOTA: verificar se valor de res = 5 em cada escrita? ***/
-
 	//DISC
 	supervisionFrame(DISC, FR_A_TX, FR_C_DISC);
 
@@ -443,7 +414,7 @@ int llclose(int port, int MODE) {
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o DISC
-					fprintf(stderr, "\nSending DISC...\n");
+					// fprintf(stderr, "\nSending DISC...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -464,6 +435,7 @@ int llclose(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got;  //calc eficiencia
 						if(memcmp(frame_got, UA, 5) == 0) {
 							fprintf(stderr, "\nConnection successfully terminated.\n");
 							done = 1;
@@ -471,7 +443,6 @@ int llclose(int port, int MODE) {
 							state = 0;
 						}
 					}
-					count_bits+=got;				//BALTASAR
 					break;
 
 				default:
@@ -484,7 +455,7 @@ int llclose(int port, int MODE) {
 		while (!done) {
 			switch (state) {
 				case 0: //Envia o DISC
-					fprintf(stderr, "\nSending DISC...\n");
+					// fprintf(stderr, "\nSending DISC...\n");
 					tcflush(port, TCIOFLUSH);  //clear port
 					if((res = write(port, DISC, 5)) < 0) {   //0 ou 5?
 						perror("write()");
@@ -505,18 +476,18 @@ int llclose(int port, int MODE) {
 							return -1;
 						}
 					} else {
+						// count_bytes_S+=got; //calc eficiencia
 						if(memcmp(frame_got, DISC, 5) == 0) {
 							state = 2;
 						} else {
 							state = 0;
 						}
 					}
-					count_bits+=got;				//BALTASAR
 					break;
 
 				case 2: //DISC received, send UA
 					tcflush(port, TCIOFLUSH);  //clear port
-					fprintf(stderr, "\nSending UA\n");
+					// fprintf(stderr, "\nSending UA\n");
 					if((res = write(port, UA, 5)) < 0) {  //0 ou 5?
 						perror("write()");
 						return -1;

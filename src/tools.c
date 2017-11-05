@@ -22,50 +22,24 @@ uint64_t nanos(struct timespec* ts) {
 
 }
 
-void alarmHandler() {
-
-	printf ("\nTimed out: %d seconds passed.\n\n", timer_seconds);
-	flag_alarm = 1;
-
-}
-
 void randomError (unsigned char *buffer, int buffer_size) {
 
-  int indice = 0;
-	// struct timeval micros;
-	int err = 0;
-	// gettimeofday(&micros, NULL);
-	// srand(micros.tv_usec);
-	err = rand() % 101; //n de 0 a 100 que corresponde a percentagem de erro
+  int indice = 0, err = 0;
+  struct timeval micros;
 
-	if (err < FER) {
-		// gettimeofday(&micros, NULL);
-		// srand(micros.tv_usec);
-		indice = rand() % (buffer_size - 3) + 1;
+  gettimeofday(&micros, NULL);
+  srand(micros.tv_usec);
+  err = rand() % 101; //n de 0 a 100 que corresponde a percentagem de erro
 
-		buffer[indice] = 0x00;
-	}
+  if (err < FER) {
+    do {
+      gettimeofday(&micros, NULL);
+      srand(micros.tv_usec);
+      indice = rand() % (buffer_size - 3) + 1;
+    } while(buffer[indice] == 0x7D || buffer[indice] == 0x7E || buffer[indice] == 0x5D || buffer[indice] == 0x5E);
 
-	// float divi = 0;
-	// fprintf(stderr, "\nerr: %d\n\n", err);
-	// divi = (float) 100/FER;
-	// if((count_frames % divi) == 0) {
-	// 	indice = rand() % (buffer_size - 2) + 1; //de 1 a 8
-	// 	//se p.e. buffer_size = 10 (pode mudar apenas de 1~8, todos menos as duas flags);
-	//
-	// 	fprintf(stderr, "\tbuffer[%d] a/e: %x\t - ", indice, buffer[indice]);
-	// 	buffer[indice] = 0x00;
-	// 	fprintf(stderr, "buffer[%d] d/e: %x\t - ", indice, buffer[indice]);
-	// }
-
-	// if(count_frames % 10 < FER/10) {
-	// 		indice = rand() % (buffer_size - 2) + 1; //de 1 a 8
-	// 		//se p.e. buffer_size = 10 (pode mudar apenas de 1~8, todos menos as duas flags);
-	//
-	// 		fprintf(stderr, "\tbuffer[%d] a/e: %x\t - ", indice, buffer[indice]);
-	// 		buffer[indice] = 0x00;
-	// 		fprintf(stderr, "buffer[%d] d/e: %x\t - ", indice, buffer[indice]);
-	// }
+    buffer[indice] = 0x00;
+  }
 
 } //randomError()
 
@@ -245,49 +219,6 @@ int setPort(char *port, struct termios *oldtio) {
 
 } //setPort()
 
-int changePort(int fd, int readMode) {
-
- 	if(readMode != 0 && readMode != 1) {
-		perror("changePort(): wrong argument for readMode");
-		return -1;
-	}
-
-	struct termios newtio;
-
-	bzero(&newtio, sizeof(newtio));
-	newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag = 0;
-
-	/* set input mode (non-canonical, no echo,...) */
-	newtio.c_lflag = 0;
-
-	if(readMode == 0) {
-		newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused (estava a 0)*/
-		newtio.c_cc[VMIN]     = 0;   /* read non-blocking */
-	} else if(readMode == 1) {
-		newtio.c_cc[VTIME]    = 1;   /* 3s max between chars */
-		newtio.c_cc[VMIN]     = 1;   /* blocking read until 1 chars received */
-	}
-
-	/*
-		VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-		leitura do(s) proximo(s) caracter(es)
-	*/
-
-	tcflush(fd, TCIOFLUSH);
-
-	if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
-		perror("tcsetattr");
-		return -1;
-	}
-
-	printf("\n\nStructure termios changed; readMode: %d\n",readMode);
-
-	return 0;
-
-} //changePort()
-
 int resetPort(int fd, struct termios *oldtio) {
 
 	if ( tcsetattr(fd, TCSANOW, oldtio) == -1) {  //volta a por a configuracao original
@@ -325,7 +256,6 @@ void progressBar(int done, int total) {
 
 	fraction = (float) done/total;
 	fprintf(stderr, "\r\33[2KProgress: %2.2f%% - |", fraction*100);
-	// fprintf(stderr, "\nProgress: %2.2f%% - |", fraction*100);
 	for(j = 0; j < fraction * 28; j++) {
 		fprintf(stderr, "|");
 	}
@@ -333,7 +263,5 @@ void progressBar(int done, int total) {
 		fprintf(stderr, " ");
 	}
 	fprintf(stderr, "| - sent/total: %d/%d", done, total);
-
-	// fprintf(stderr, "\n\n");
 
 } //progressBar()
